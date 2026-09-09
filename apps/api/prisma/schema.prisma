@@ -1,0 +1,345 @@
+// ============================================================================
+// TorxOS — Prisma Schema Local Dev (SQLite)
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Tenant {
+  id                    String                 @id @default(uuid())
+  tradeName             String
+  legalName             String?
+  document              String                 @unique
+  phone                 String
+  email                 String
+  plan                  String                 @default("PRO")
+  isActive              Boolean                @default(true)
+  logoUrl               String?
+  settings              String?                @default("{\"currency\": \"BRL\", \"enable_whatsapp_auto\": true}")
+  parentTenantId        String?
+  isHeadquarter         Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @default(now()) @updatedAt
+
+  parentTenant          Tenant?                @relation("TenantBranches", fields: [parentTenantId], references: [id], onDelete: SetNull)
+  branches              Tenant[]               @relation("TenantBranches")
+
+  users                 User[]
+  clients               Client[]
+  products              Product[]
+  serviceOrders         ServiceOrder[]
+  serviceOrderItems     ServiceOrderItem[]
+  sales                 Sale[]
+  saleItems             SaleItem[]
+  chartOfAccounts       ChartOfAccount[]
+  bankAccounts          BankAccount[]
+  financialTransactions FinancialTransaction[]
+  aiMentorSessions      AiMentorSession[]
+
+  @@map("tenants")
+}
+
+model User {
+  id                        String                 @id @default(uuid())
+  tenantId                  String?
+  name                      String
+  email                     String                 @unique
+  passwordHash              String
+  role                      String                 @default("ATTENDANT")
+  commissionServicesPercent Decimal                @default(0.00)
+  commissionProductsPercent Decimal                @default(0.00)
+  isActive                  Boolean                @default(true)
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @default(now()) @updatedAt
+
+  tenant                    Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedServiceOrders     ServiceOrder[]         @relation("TechnicianOrders")
+  serviceOrderItems         ServiceOrderItem[]     @relation("TechnicianItems")
+  sales                     Sale[]                 @relation("SellerSales")
+  aiMentorSessions          AiMentorSession[]
+
+  @@index([tenantId, role], name: "idx_users_tenant_role")
+  @@map("users")
+}
+
+model Client {
+  id                    String                 @id @default(uuid())
+  tenantId              String
+  name                  String
+  document              String?
+  phone                 String
+  email                 String?
+  address               String?
+  notes                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @default(now()) @updatedAt
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceOrders         ServiceOrder[]
+  sales                 Sale[]
+  financialTransactions FinancialTransaction[]
+
+  @@index([tenantId, phone], name: "idx_clients_tenant_phone")
+  @@index([tenantId, document], name: "idx_clients_tenant_document")
+  @@map("clients")
+}
+
+model Product {
+  id                     String             @id @default(uuid())
+  tenantId               String
+  sku                    String?
+  barcode                String?
+  name                   String
+  category               String
+  brand                  String?
+  imageUrl               String?
+  costPrice              Decimal            @default(0.00)
+  salePrice              Decimal            @default(0.00)
+  currentStock           Decimal            @default(0.00)
+  minStockManual         Decimal            @default(0.00)
+  shelfLocation          String?
+
+  supplierLeadTimeDays   Int                @default(3)
+  safetyStockCalculated  Decimal            @default(0.00)
+  reorderPointCalculated Decimal            @default(0.00)
+  dailyAvgConsumption    Decimal            @default(0.0000)
+  daysUntilStockout      Int                @default(999)
+  stockoutRiskStatus     String             @default("HEALTHY")
+
+  isActive               Boolean            @default(true)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @default(now()) @updatedAt
+
+  tenant                 Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceOrderItems      ServiceOrderItem[]
+  saleItems              SaleItem[]
+
+  @@index([tenantId, stockoutRiskStatus], name: "idx_products_tenant_stockout")
+  @@index([tenantId, barcode], name: "idx_products_tenant_barcode")
+  @@map("products")
+}
+
+model ServiceOrder {
+  id                  String                 @id @default(uuid())
+  tenantId            String
+  osNumber            Int                    @default(1001)
+  publicToken         String                 @unique @default(uuid())
+  clientId            String
+  technicianId        String?
+  status              String                 @default("TRIAGE")
+  priority            String                 @default("NORMAL")
+
+  deviceType          String
+  deviceBrand         String
+  deviceModel         String
+  serialOrImei        String?
+  devicePassword      String?
+
+  reportedDefect      String
+  technicalDiagnosis  String?
+  entryChecklist      String?                @default("{}")
+  exitChecklist       String?                @default("{}")
+  clientSignatureUrl  String?
+
+  totalServices       Decimal                @default(0.00)
+  totalParts          Decimal                @default(0.00)
+  totalDiscount       Decimal                @default(0.00)
+  netTotal            Decimal                @default(0.00)
+
+  warrantyTerms       String?
+  warrantyPeriodDays  Int                    @default(90)
+  deliveryDeadline    DateTime?
+  deliveredAt         DateTime?
+  stockDeducted       Boolean                @default(false)
+  stockDeductedAt     DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @default(now()) @updatedAt
+
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client              Client                 @relation(fields: [clientId], references: [id])
+  technician          User?                  @relation("TechnicianOrders", fields: [technicianId], references: [id])
+  items               ServiceOrderItem[]
+  financialTransactions FinancialTransaction[]
+
+  @@index([tenantId, status], name: "idx_os_tenant_status")
+  @@index([publicToken], name: "idx_os_public_token")
+  @@map("service_orders")
+}
+
+model ServiceOrderItem {
+  id                 String       @id @default(uuid())
+  tenantId           String
+  serviceOrderId     String
+  itemType           String       @default("SERVICE")
+  productId          String?
+  description        String
+  quantity           Decimal      @default(1.00)
+  unitCost           Decimal      @default(0.00)
+  unitPrice          Decimal      @default(0.00)
+  discountAmount     Decimal      @default(0.00)
+  totalAmount        Decimal
+  technicianId       String?
+  commissionAmount   Decimal      @default(0.00)
+  isApprovedByClient Boolean      @default(true)
+  stockDeducted      Boolean      @default(false)
+  stockDeductedAt    DateTime?
+
+  tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceOrder       ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  product            Product?     @relation(fields: [productId], references: [id])
+  technician         User?        @relation("TechnicianItems", fields: [technicianId], references: [id])
+
+  @@index([serviceOrderId], name: "idx_os_items_order_id")
+  @@map("service_order_items")
+}
+
+model ChartOfAccount {
+  id                    String                 @id @default(uuid())
+  tenantId              String
+  code                  String
+  name                  String
+  accountType           String
+  parentId              String?
+  isActive              Boolean                @default(true)
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent                ChartOfAccount?        @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children              ChartOfAccount[]       @relation("AccountHierarchy")
+  financialTransactions FinancialTransaction[]
+
+  @@unique([tenantId, code], name: "uq_tenant_account_code")
+  @@map("chart_of_accounts")
+}
+
+model BankAccount {
+  id                    String                 @id @default(uuid())
+  tenantId              String
+  name                  String
+  accountType           String
+  initialBalance        Decimal                @default(0.00)
+  currentBalance        Decimal                @default(0.00)
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  financialTransactions FinancialTransaction[]
+
+  @@map("bank_accounts")
+}
+
+model FinancialTransaction {
+  id                 String            @id @default(uuid())
+  tenantId           String
+  transactionType    String
+  chartOfAccountId   String
+  bankAccountId      String?
+  clientId           String?
+  serviceOrderId     String?
+
+  description        String
+  documentNumber     String?
+  installmentNumber  Int               @default(1)
+  totalInstallments  Int               @default(1)
+
+  grossAmount        Decimal
+  discountAmount     Decimal           @default(0.00)
+  interestAmount     Decimal           @default(0.00)
+  feeAmount          Decimal           @default(0.00)
+  netAmount          Decimal
+
+  competenceDate     DateTime
+  dueDate            DateTime
+  settlementDate     DateTime?
+
+  status             String            @default("PENDING")
+  paymentMethod      String?
+  createdAt          DateTime          @default(now())
+
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  chartOfAccount     ChartOfAccount    @relation(fields: [chartOfAccountId], references: [id])
+  bankAccount        BankAccount?      @relation(fields: [bankAccountId], references: [id])
+  client             Client?           @relation(fields: [clientId], references: [id])
+  serviceOrder       ServiceOrder?     @relation(fields: [serviceOrderId], references: [id])
+  saleId             String?
+  sale               Sale?             @relation(fields: [saleId], references: [id])
+
+  @@index([tenantId, dueDate], name: "idx_fin_tenant_due_date")
+  @@index([tenantId, status], name: "idx_fin_tenant_status")
+  @@index([tenantId, competenceDate], name: "idx_fin_tenant_competence")
+  @@index([saleId], name: "idx_fin_sale_id")
+  @@map("financial_transactions")
+}
+
+model Sale {
+  id                    String                 @id @default(uuid())
+  tenantId              String
+  saleNumber            Int                    @default(1001)
+  clientId              String?
+  sellerId              String?
+  totalAmount           Decimal                @default(0.00)
+  discountAmount        Decimal                @default(0.00)
+  netTotal              Decimal                @default(0.00)
+  paymentMethod         String                 @default("PIX")
+  receivedAmount        Decimal?               @default(0.00)
+  changeAmount          Decimal?               @default(0.00)
+  status                String                 @default("COMPLETED")
+  notes                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @default(now()) @updatedAt
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client                Client?                @relation(fields: [clientId], references: [id])
+  seller                User?                  @relation("SellerSales", fields: [sellerId], references: [id])
+  items                 SaleItem[]
+  financialTransactions FinancialTransaction[]
+
+  @@index([tenantId, createdAt], name: "idx_sales_tenant_date")
+  @@index([tenantId, status], name: "idx_sales_tenant_status")
+  @@map("sales")
+}
+
+model SaleItem {
+  id              String   @id @default(uuid())
+  tenantId        String
+  saleId          String
+  productId       String
+  imeiOrSerial    String?
+  quantity        Decimal  @default(1.00)
+  unitCost        Decimal  @default(0.00)
+  unitPrice       Decimal  @default(0.00)
+  discountAmount  Decimal  @default(0.00)
+  totalAmount     Decimal  @default(0.00)
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sale            Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id])
+
+  @@index([saleId], name: "idx_sale_items_sale_id")
+  @@index([productId], name: "idx_sale_items_product_id")
+  @@map("sale_items")
+}
+
+model AiMentorSession {
+  id                    String   @id @default(uuid())
+  tenantId              String
+  userId                String
+  pillar                String
+  userPrompt            String
+  aggregatedContextJson String
+  aiResponseMarkdown    String
+  actionItems           String?  @default("[]")
+  feedbackScore         Int?
+  createdAt             DateTime @default(now())
+
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                  User     @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, pillar], name: "idx_ai_tenant_pillar")
+  @@map("ai_mentor_sessions")
+}

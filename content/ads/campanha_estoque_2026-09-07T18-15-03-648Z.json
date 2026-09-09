@@ -1,0 +1,36 @@
+{
+  "executedAt": "2026-09-07T18:15:03.648Z",
+  "focus": "ESTOQUE",
+  "selectedAds": [
+    {
+      "framework": "PAS (Problema - Agitação - Solução)",
+      "angle": "Peças que Somem & Falta de Telas",
+      "hook": "🚨 Quantas telas e baterias já sumiram na sua oficina sem ninguém saber quem pegou?",
+      "primaryText": "Se você tem assistência técnica, já passou pela vergonha de prometer o aparelho para as 18h e, na hora de fechar a carcaça, descobrir que a peça não estava na gaveta.\n\nAlém de passar vergonha com o cliente, você perdeu a venda e o lucro daquele dia.\n\nCom o EVORIX, cada peça só sai do estoque vinculada ao número da OS. O sistema dá baixa automática, calcula sua margem real e te avisa antes da peça acabar.\n\n✅ Teste grátis por 7 dias sem precisar de cartão de crédito!",
+      "headline": "Controle de Peças para Assistência Técnica • Teste Grátis",
+      "cta": "Cadastre-se Grátis",
+      "url": "https://app.evorix.com.br/lp?utm_source=meta&utm_medium=feed&utm_campaign=estoque_pas"
+    }
+  ],
+  "googleSearchCampaign": {
+    "campaign": "Google Search • Fundo de Funil • Evorix SaaS",
+    "headlines": [
+      "Sistema para Assistência",
+      "Programa Ordem de Serviço",
+      "EVORIX • Teste 7 Dias Grátis",
+      "Software Oficina Celular",
+      "Gestão Completa de Bancada"
+    ],
+    "descriptions": [
+      "Elimine o caderno e controle ordens de serviço, estoque e caixa. Teste 7 dias grátis!",
+      "Envio de OS por WhatsApp, QR Code no aparelho e alerta de estoque com Inteligência Artificial."
+    ],
+    "keywords": [
+      "\"sistema para assistencia tecnica\"",
+      "[software para assistencia tecnica de celulares]",
+      "\"programa ordem de servico celular\"",
+      "\"software gestao oficina celular gratis\""
+    ],
+    "finalUrl": "https://app.evorix.com.br/lp?utm_source=google&utm_medium=search"
+  }
+}

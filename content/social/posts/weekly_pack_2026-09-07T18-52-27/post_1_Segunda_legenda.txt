@@ -1,0 +1,19 @@
+🔥 3 Erros na Bancada que Queimam a Placa do Cliente
+
+O segundo erro quase todo técnico iniciante já cometeu pelo menos uma vez.
+
+Se você trabalha com conserto de celulares ou computadores, salva esse carrossel para consultar na sua bancada! 📌
+
+👇 O que vimos nesse post:
+• 1. Tensão Excessiva na Fonte: Injetar voltagem sem antes verificar a linha primária VDD_MAIN.
+• 2. Fluxo de Solda Condutivo: Não limpar resíduos de fluxo que oxidam trilhas microscópicas.
+• 3. Desconectar Bateria por Último: Manter energia residual antes de desconectar flex de tela ou câmeras.
+
+💡 Organize seus laudos técnicos e checklists fotográficos com o Evorix. Teste 7 dias grátis no link da bio!
+
+💬 Qual é a maior dificuldade na sua bancada hoje? Comenta aqui embaixo!
+🚀 Compartilha com aquele amigo técnico que precisa organizar a oficina.
+
+.
+.
+#assistenciatecnica #consertodecelular #gestaodeoficina #tecnicoemcelular #microsoldagem #lojadegelular #evorix

@@ -1,0 +1,318 @@
+// ============================================================================
+// TorxOS — Prisma Schema Oficial de Produção (PostgreSQL 16 Multi-Tenant)
+// Blueprint v1.0.0
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  ATTENDANT
+  TECHNICIAN
+  FINANCIAL
+}
+
+enum OsStatus {
+  TRIAGE
+  ANALYSIS
+  AWAITING_APPROVAL
+  APPROVED
+  IN_MAINTENANCE
+  AWAITING_PARTS
+  QUALITY_CHECK
+  READY_FOR_PICKUP
+  DELIVERED
+  CANCELED
+}
+
+enum TransactionType {
+  RECEIVABLE
+  PAYABLE
+}
+
+enum TransactionStatus {
+  PENDING
+  SETTLED
+  PARTIALLY_SETTLED
+  CANCELLED
+}
+
+model Tenant {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  tradeName             String                 @map("trade_name") @db.VarChar(150)
+  legalName             String?                @map("legal_name") @db.VarChar(200)
+  document              String                 @unique @db.VarChar(20)
+  phone                 String                 @db.VarChar(20)
+  email                 String                 @db.VarChar(100)
+  plan                  String                 @default("PRO") @db.VarChar(30)
+  isActive              Boolean                @default(true) @map("is_active")
+  settings              Json?                  @default("{\"currency\": \"BRL\", \"enable_whatsapp_auto\": true}")
+  parentTenantId        String?                @map("parent_tenant_id") @db.Uuid
+  isHeadquarter         Boolean                @default(true) @map("is_headquarter")
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  parentTenant          Tenant?                @relation("TenantBranches", fields: [parentTenantId], references: [id], onDelete: SetNull)
+  branches              Tenant[]               @relation("TenantBranches")
+
+  users                 User[]
+  clients               Client[]
+  products              Product[]
+  serviceOrders         ServiceOrder[]
+  serviceOrderItems     ServiceOrderItem[]
+  chartOfAccounts       ChartOfAccount[]
+  bankAccounts          BankAccount[]
+  financialTransactions FinancialTransaction[]
+  aiMentorSessions      AiMentorSession[]
+
+  @@map("tenants")
+}
+
+model User {
+  id                        String                 @id @default(uuid()) @db.Uuid
+  tenantId                  String                 @map("tenant_id") @db.Uuid
+  name                      String                 @db.VarChar(120)
+  email                     String                 @db.VarChar(150)
+  passwordHash              String                 @map("password_hash") @db.VarChar(255)
+  role                      UserRole               @default(ATTENDANT)
+  commissionServicesPercent Decimal                @default(0.00) @map("commission_services_percent") @db.Decimal(5, 2)
+  commissionProductsPercent Decimal                @default(0.00) @map("commission_products_percent") @db.Decimal(5, 2)
+  isActive                  Boolean                @default(true) @map("is_active")
+  createdAt                 DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                 DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant                    Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedServiceOrders     ServiceOrder[]         @relation("TechnicianOrders")
+  serviceOrderItems         ServiceOrderItem[]     @relation("TechnicianItems")
+  aiMentorSessions          AiMentorSession[]
+
+  @@unique([tenantId, email], name: "uq_tenant_user_email")
+  @@index([tenantId, role], name: "idx_users_tenant_role")
+  @@map("users")
+}
+
+model Client {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  tenantId              String                 @map("tenant_id") @db.Uuid
+  name                  String                 @db.VarChar(150)
+  document              String?                @db.VarChar(20)
+  phone                 String                 @db.VarChar(20)
+  email                 String?                @db.VarChar(120)
+  address               Json?
+  notes                 String?                @db.Text
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceOrders         ServiceOrder[]
+  financialTransactions FinancialTransaction[]
+
+  @@index([tenantId, phone], name: "idx_clients_tenant_phone")
+  @@index([tenantId, document], name: "idx_clients_tenant_document")
+  @@map("clients")
+}
+
+model Product {
+  id                     String             @id @default(uuid()) @db.Uuid
+  tenantId               String             @map("tenant_id") @db.Uuid
+  sku                    String?            @db.VarChar(50)
+  barcode                String?            @db.VarChar(60)
+  name                   String             @db.VarChar(150)
+  category               String             @db.VarChar(60)
+  brand                  String?            @db.VarChar(60)
+  costPrice              Decimal            @default(0.00) @map("cost_price") @db.Decimal(15, 2)
+  salePrice              Decimal            @default(0.00) @map("sale_price") @db.Decimal(15, 2)
+  currentStock           Decimal            @default(0.00) @map("current_stock") @db.Decimal(12, 2)
+  minStockManual         Decimal            @default(0.00) @map("min_stock_manual") @db.Decimal(12, 2)
+  shelfLocation          String?            @map("shelf_location") @db.VarChar(50)
+
+  supplierLeadTimeDays   Int                @default(3) @map("supplier_lead_time_days")
+  safetyStockCalculated  Decimal            @default(0.00) @map("safety_stock_calculated") @db.Decimal(12, 2)
+  reorderPointCalculated Decimal            @default(0.00) @map("reorder_point_calculated") @db.Decimal(12, 2)
+  dailyAvgConsumption    Decimal            @default(0.0000) @map("daily_avg_consumption") @db.Decimal(10, 4)
+  daysUntilStockout      Int                @default(999) @map("days_until_stockout")
+  stockoutRiskStatus     String             @default("HEALTHY") @map("stockout_risk_status") @db.VarChar(20)
+
+  isActive               Boolean            @default(true) @map("is_active")
+  createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant                 Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceOrderItems      ServiceOrderItem[]
+
+  @@index([tenantId, stockoutRiskStatus], name: "idx_products_tenant_stockout")
+  @@index([tenantId, barcode], name: "idx_products_tenant_barcode")
+  @@map("products")
+}
+
+model ServiceOrder {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  tenantId            String                 @map("tenant_id") @db.Uuid
+  osNumber            Int                    @default(autoincrement()) @map("os_number")
+  publicToken         String                 @unique @default(uuid()) @map("public_token") @db.VarChar(64)
+  clientId            String                 @map("client_id") @db.Uuid
+  technicianId        String?                @map("technician_id") @db.Uuid
+  status              OsStatus               @default(TRIAGE)
+  priority            String                 @default("NORMAL") @db.VarChar(10)
+
+  deviceType          String                 @map("device_type") @db.VarChar(50)
+  deviceBrand         String                 @map("device_brand") @db.VarChar(50)
+  deviceModel         String                 @map("device_model") @db.VarChar(100)
+  serialOrImei        String?                @map("serial_or_imei") @db.VarChar(100)
+  devicePassword      String?                @map("device_password") @db.VarChar(50)
+
+  reportedDefect      String                 @map("reported_defect") @db.Text
+  technicalDiagnosis  String?                @map("technical_diagnosis") @db.Text
+  entryChecklist      Json?                  @default("{}") @map("entry_checklist")
+  exitChecklist       Json?                  @default("{}") @map("exit_checklist")
+  clientSignatureUrl  String?                @map("client_signature_url") @db.Text
+
+  totalServices       Decimal                @default(0.00) @map("total_services") @db.Decimal(15, 2)
+  totalParts          Decimal                @default(0.00) @map("total_parts") @db.Decimal(15, 2)
+  totalDiscount       Decimal                @default(0.00) @map("total_discount") @db.Decimal(15, 2)
+  netTotal            Decimal                @default(0.00) @map("net_total") @db.Decimal(15, 2)
+
+  warrantyTerms       String?                @map("warranty_terms") @db.Text
+  warrantyPeriodDays  Int                    @default(90) @map("warranty_period_days")
+  deliveryDeadline    DateTime?              @map("delivery_deadline") @db.Timestamptz
+  deliveredAt         DateTime?              @map("delivered_at") @db.Timestamptz
+  createdAt           DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client              Client                 @relation(fields: [clientId], references: [id])
+  technician          User?                  @relation("TechnicianOrders", fields: [technicianId], references: [id])
+  items               ServiceOrderItem[]
+  financialTransactions FinancialTransaction[]
+
+  @@index([tenantId, status], name: "idx_os_tenant_status")
+  @@index([publicToken], name: "idx_os_public_token")
+  @@map("service_orders")
+}
+
+model ServiceOrderItem {
+  id                 String       @id @default(uuid()) @db.Uuid
+  tenantId           String       @map("tenant_id") @db.Uuid
+  serviceOrderId     String       @map("service_order_id") @db.Uuid
+  itemType           String       @map("item_type") @db.VarChar(10)
+  productId          String?      @map("product_id") @db.Uuid
+  description        String       @db.VarChar(200)
+  quantity           Decimal      @default(1.00) @db.Decimal(10, 2)
+  unitCost           Decimal      @default(0.00) @map("unit_cost") @db.Decimal(15, 2)
+  unitPrice          Decimal      @default(0.00) @map("unit_price") @db.Decimal(15, 2)
+  discountAmount     Decimal      @default(0.00) @map("discount_amount") @db.Decimal(15, 2)
+  totalAmount        Decimal      @map("total_amount") @db.Decimal(15, 2)
+  technicianId       String?      @map("technician_id") @db.Uuid
+  commissionAmount   Decimal      @default(0.00) @map("commission_amount") @db.Decimal(15, 2)
+  isApprovedByClient Boolean      @default(true) @map("is_approved_by_client")
+
+  tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceOrder       ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  product            Product?     @relation(fields: [productId], references: [id])
+  technician         User?        @relation("TechnicianItems", fields: [technicianId], references: [id])
+
+  @@index([serviceOrderId], name: "idx_os_items_order_id")
+  @@map("service_order_items")
+}
+
+model ChartOfAccount {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  tenantId              String                 @map("tenant_id") @db.Uuid
+  code                  String                 @db.VarChar(30)
+  name                  String                 @db.VarChar(120)
+  accountType           String                 @map("account_type") @db.VarChar(20)
+  parentId              String?                @map("parent_id") @db.Uuid
+  isActive              Boolean                @default(true) @map("is_active")
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent                ChartOfAccount?        @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children              ChartOfAccount[]       @relation("AccountHierarchy")
+  financialTransactions FinancialTransaction[]
+
+  @@unique([tenantId, code], name: "uq_tenant_account_code")
+  @@map("chart_of_accounts")
+}
+
+model BankAccount {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  tenantId              String                 @map("tenant_id") @db.Uuid
+  name                  String                 @db.VarChar(100)
+  accountType           String                 @map("account_type") @db.VarChar(30)
+  initialBalance        Decimal                @default(0.00) @map("initial_balance") @db.Decimal(15, 2)
+  currentBalance        Decimal                @default(0.00) @map("current_balance") @db.Decimal(15, 2)
+  isActive              Boolean                @default(true) @map("is_active")
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  financialTransactions FinancialTransaction[]
+
+  @@map("bank_accounts")
+}
+
+model FinancialTransaction {
+  id                 String            @id @default(uuid()) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  transactionType    TransactionType   @map("transaction_type")
+  chartOfAccountId   String            @map("chart_of_account_id") @db.Uuid
+  bankAccountId      String?           @map("bank_account_id") @db.Uuid
+  clientId           String?           @map("client_id") @db.Uuid
+  serviceOrderId     String?           @map("service_order_id") @db.Uuid
+
+  description        String            @db.VarChar(255)
+  documentNumber     String?           @map("document_number") @db.VarChar(100)
+  installmentNumber  Int               @default(1) @map("installment_number")
+  totalInstallments  Int               @default(1) @map("total_installments")
+
+  grossAmount        Decimal           @map("gross_amount") @db.Decimal(15, 2)
+  discountAmount     Decimal           @default(0.00) @map("discount_amount") @db.Decimal(15, 2)
+  interestAmount     Decimal           @default(0.00) @map("interest_amount") @db.Decimal(15, 2)
+  feeAmount          Decimal           @default(0.00) @map("fee_amount") @db.Decimal(15, 2)
+  netAmount          Decimal           @map("net_amount") @db.Decimal(15, 2)
+
+  competenceDate     DateTime          @map("competence_date") @db.Date
+  dueDate            DateTime          @map("due_date") @db.Date
+  settlementDate     DateTime?         @map("settlement_date") @db.Date
+
+  status             TransactionStatus @default(PENDING)
+  paymentMethod      String?           @map("payment_method") @db.VarChar(40)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  chartOfAccount     ChartOfAccount    @relation(fields: [chartOfAccountId], references: [id])
+  bankAccount        BankAccount?      @relation(fields: [bankAccountId], references: [id])
+  client             Client?           @relation(fields: [clientId], references: [id])
+  serviceOrder       ServiceOrder?     @relation(fields: [serviceOrderId], references: [id])
+
+  @@index([tenantId, dueDate], name: "idx_fin_tenant_due_date")
+  @@index([tenantId, status], name: "idx_fin_tenant_status")
+  @@index([tenantId, competenceDate], name: "idx_fin_tenant_competence")
+  @@map("financial_transactions")
+}
+
+model AiMentorSession {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  userId                String   @map("user_id") @db.Uuid
+  pillar                String   @db.VarChar(40)
+  userPrompt            String   @map("user_prompt") @db.Text
+  aggregatedContextJson Json     @map("aggregated_context_json")
+  aiResponseMarkdown    String   @map("ai_response_markdown") @db.Text
+  actionItems           Json?    @default("[]") @map("action_items")
+  feedbackScore         Int?     @map("feedback_score")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                  User     @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, pillar], name: "idx_ai_tenant_pillar")
+  @@map("ai_mentor_sessions")
+}

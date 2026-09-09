@@ -1,0 +1,63 @@
+# ============================================================================
+# EVORIX — Pipeline de Integração e Deploy Contínuo no Google Cloud Build
+# ============================================================================
+steps:
+  # 1. Build da Imagem da API NestJS
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/evorix-repo/evorix-api:$COMMIT_SHA'
+      - '-f'
+      - 'apps/api/Dockerfile'
+      - '.'
+
+  # 2. Push da Imagem da API
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/evorix-repo/evorix-api:$COMMIT_SHA'
+
+  # 3. Deploy da API no Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'evorix-api'
+      - '--image=southamerica-east1-docker.pkg.dev/$PROJECT_ID/evorix-repo/evorix-api:$COMMIT_SHA'
+      - '--region=southamerica-east1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+
+  # 4. Build da Imagem do Frontend Next.js Standalone
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/evorix-repo/evorix-web:$COMMIT_SHA'
+      - '-f'
+      - 'apps/web/Dockerfile'
+      - '.'
+
+  # 5. Push da Imagem do Frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/evorix-repo/evorix-web:$COMMIT_SHA'
+
+  # 6. Deploy do Frontend no Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'evorix-web'
+      - '--image=southamerica-east1-docker.pkg.dev/$PROJECT_ID/evorix-repo/evorix-web:$COMMIT_SHA'
+      - '--region=southamerica-east1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/evorix-repo/evorix-api:$COMMIT_SHA'
+  - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/evorix-repo/evorix-web:$COMMIT_SHA'

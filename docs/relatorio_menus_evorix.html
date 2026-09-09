@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>EVORIX TechOS - Guia Oficial de Menus e Funcionalidades</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    @page {
+      size: A4;
+      margin: 14mm 14mm 16mm 14mm;
+      @bottom-right {
+        content: counter(page);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 8pt;
+        color: #71716C;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1C1C1A;
+      background-color: #FFFFFF;
+      line-height: 1.5;
+      font-size: 9.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Utilitários de Quebra de Página */
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+    .avoid-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Capa */
+    .cover-page {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 40px 20px;
+      page-break-after: always;
+      background: linear-gradient(145deg, #181816 0%, #242420 100%);
+      color: #FFFFFF;
+      border-radius: 12px;
+    }
+
+    .cover-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cover-logo-box {
+      width: 44px;
+      height: 44px;
+      background: #2D2D28;
+      border: 1px solid rgba(254, 240, 138, 0.3);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #FEF08A;
+      font-family: serif;
+    }
+
+    .cover-brand-title {
+      font-size: 16pt;
+      font-weight: 800;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cover-brand-dot {
+      width: 8px;
+      height: 8px;
+      background: #10B981;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .cover-brand-sub {
+      font-size: 8pt;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #A1A19B;
+      font-weight: 600;
+    }
+
+    .cover-center {
+      margin: 80px 0;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(254, 240, 138, 0.12);
+      border: 1px solid rgba(254, 240, 138, 0.3);
+      color: #FEF08A;
+      border-radius: 999px;
+      font-size: 8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+
+    .cover-title {
+      font-size: 26pt;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      color: #FBFBFA;
+    }
+
+    .cover-desc {
+      font-size: 11pt;
+      color: #D4D4D0;
+      max-width: 580px;
+      line-height: 1.6;
+    }
+
+    .cover-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 8.5pt;
+      color: #A1A19B;
+    }
+
+    .cover-footer strong {
+      color: #FFFFFF;
+    }
+
+    /* Cabeçalhos de Seções */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #E7E7E2;
+      padding-bottom: 10px;
+      margin-bottom: 22px;
+    }
+
+    .header-bar .logo-mini {
+      font-weight: 800;
+      font-size: 10pt;
+      letter-spacing: 1px;
+      color: #181816;
+    }
+
+    .header-bar .doc-title {
+      font-size: 8pt;
+      color: #71716C;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    h2.section-title {
+      font-size: 15pt;
+      font-weight: 800;
+      color: #181816;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-intro {
+      font-size: 9pt;
+      color: #575752;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    /* Cards de Menu */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .menu-card {
+      background: #FAFAF8;
+      border: 1px solid #E5E5DF;
+      border-radius: 10px;
+      padding: 14px 16px;
+      position: relative;
+    }
+
+    .menu-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      border-bottom: 1px dashed #E0E0D8;
+      padding-bottom: 8px;
+    }
+
+    .menu-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .menu-icon {
+      width: 26px;
+      height: 26px;
+      background: #181816;
+      color: #FEF08A;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11pt;
+    }
+
+    .menu-name {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1C1C1A;
+    }
+
+    .menu-route {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5pt;
+      background: #EFEFEA;
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: #52524E;
+      font-weight: 600;
+    }
+
+    .badge-tag {
+      font-size: 7pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #E8F5E9;
+      color: #1B5E20;
+      border: 1px solid #C8E6C9;
+    }
+
+    .badge-tag.blue {
+      background: #E3F2FD;
+      color: #0D47A1;
+      border-color: #BBDEFB;
+    }
+
+    .badge-tag.amber {
+      background: #FFF8E1;
+      color: #F57F17;
+      border-color: #FFE082;
+    }
+
+    .badge-tag.purple {
+      background: #F3E5F5;
+      color: #4A148C;
+      border-color: #E1BEE7;
+    }
+
+    .menu-desc {
+      font-size: 9pt;
+      color: #383835;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      margin-top: 8px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 8.2pt;
+      color: #4A4A45;
+    }
+
+    .feature-item span.bullet {
+      color: #10B981;
+      font-weight: bold;
+    }
+
+    /* Destaques Especiais */
+    .highlight-box {
+      background: #F4FBF7;
+      border: 1px solid #A7F3D0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 14px 0;
+      font-size: 8.5pt;
+      color: #065F46;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .highlight-box strong {
+      color: #047857;
+    }
+
+    /* Tabela Resumo Final */
+    table.summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 8.2pt;
+    }
+
+    table.summary-table th {
+      background: #181816;
+      color: #FFFFFF;
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 600;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table.summary-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #E8E8E3;
+      color: #2E2E2A;
+      vertical-align: top;
+    }
+
+    table.summary-table tr:nth-child(even) td {
+      background-color: #FAF9F6;
+    }
+
+    .footer-note {
+      margin-top: 30px;
+      border-top: 1px solid #E5E5DF;
+      padding-top: 12px;
+      text-align: center;
+      font-size: 8pt;
+      color: #71716C;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CAPA -->
+  <div class="cover-page">
+    <div class="cover-top">
+      <div class="cover-logo-box">E</div>
+      <div>
+        <div class="cover-brand-title">EVORIX <span class="cover-brand-dot"></span></div>
+        <div class="cover-brand-sub">TechOS • Business Platform</div>
+      </div>
+    </div>
+
+    <div class="cover-center">
+      <div class="cover-badge">Manual Executivo de Recursos</div>
+      <h1 class="cover-title">Guia de Menus & Arquitetura Operacional</h1>
+      <p class="cover-desc">
+        Detalhamento completo de cada tela, módulo e funcionalidade da plataforma Evorix.
+        Desenvolvido para apresentar ao cliente o fluxo de trabalho de ponta a ponta, desde a triagem de balcão até a gestão financeira avançada.
+      </p>
+    </div>
+
+    <div class="cover-footer">
+      <div><strong>Destinado a:</strong> Lojas de Assistência Técnica & Eletrônicos</div>
+      <div><strong>Versão:</strong> 2.4 PRO • Setembro 2026</div>
+      <div><strong>Status:</strong> Plataforma Homologada</div>
+    </div>
+  </div>
+
+  <!-- PÁGINA 2: VISÃO GERAL E EVORIX OS -->
+  <div class="page-container">
+    <div class="header-bar">
+      <div class="logo-mini">EVORIX TechOS</div>
+      <div class="doc-title">Módulo de Balcão & Bancada</div>
+    </div>
+
+    <h2 class="section-title">1. Menu: Visão Geral (Dashboard Central)</h2>
+    <p class="section-intro">
+      O centro de comando do empresário. Apresenta a "temperatura" da assistência técnica em tempo real, sem necessidade de emitir relatórios manuais.
+    </p>
+
+    <div class="menu-grid">
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">📊</div>
+            <div>
+              <div class="menu-name">Painel de Indicadores Principais</div>
+            </div>
+          </div>
+          <span class="menu-route">/ (Home)</span>
+        </div>
+        <p class="menu-desc">
+          Visão panorâmica e consolidada da operação do dia e do mês corrente.
+        </p>
+        <ul class="feature-list">
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Faturamento Diário & Mensal:</strong> Receita bruta e ticket médio por reparo.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Status da Bancada:</strong> Total de aparelhos em manutenção, aguardando peça ou prontos.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Alertas de Ruptura:</strong> Aviso imediato caso componentes de alto giro estejam no fim.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Atalhos Operacionais:</strong> Abertura de OS rápida e consulta de clientes a 1 clique.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="section-title" style="margin-top: 26px;">2. Menu: Evorix OS (Ordens de Serviço)</h2>
+    <p class="section-intro">
+      O coração técnico da loja. Substitui pranchetas de papel por uma esteira de produção digital que elimina erros, perdas de prazos e desvios de peças.
+    </p>
+
+    <div class="menu-grid">
+
+      <!-- NOVA OS -->
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">➕</div>
+            <div>
+              <div class="menu-name">Nova Ordem de Serviço (Check-in Blindado)</div>
+            </div>
+          </div>
+          <div style="display:flex; gap: 6px; align-items:center;">
+            <span class="badge-tag amber">Balcão Ágil</span>
+            <span class="menu-route">/os/nova</span>
+          </div>
+        </div>
+        <p class="menu-desc">
+          Abertura ágil de OS em menos de 2 minutos com triagem pericial de proteção jurídica.
+        </p>
+        <ul class="feature-list">
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Busca Rápida de Cliente:</strong> Localização por CPF ou WhatsApp em segundos.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Checklist Pericial (20+ Itens):</strong> Teste prévio de FaceID, câmeras, biometria e tela.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Inspeção Fotográfica:</strong> Captura fotos de avarias pela câmera ou galeria.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Catálogo de Peças Integrado:</strong> Seleciona a peça com visualização de saldo e gaveta física.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Assinatura Digital no Balcão:</strong> Termo de entrega assinado na tela pelo cliente.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Cotação de Serviços:</strong> Parametrização clara de mão de obra e peças.</li>
+        </ul>
+      </div>
+
+      <!-- KANBAN DE BANCADA -->
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">📋</div>
+            <div>
+              <div class="menu-name">Kanban de Bancada (Esteira de Produção)</div>
+            </div>
+          </div>
+          <div style="display:flex; gap: 6px; align-items:center;">
+            <span class="badge-tag">Operacional</span>
+            <span class="menu-route">/os/kanban</span>
+          </div>
+        </div>
+        <p class="menu-desc">
+          Quadro dinâmico onde cada aparelho avança visualmente entre colunas operacionais com arrastar e soltar.
+        </p>
+        <ul class="feature-list">
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Colunas Inteligentes:</strong> Triagem ➔ Orçamento ➔ Aprovado ➔ Em Bancada ➔ Pronto.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Baixa Automática no Estoque:</strong> O estoque físico debita quando a OS entra em bancada.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Distribuição por Técnico:</strong> Identificação clara de quem é o responsável pelo reparo.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Controle de Gargalos:</strong> Visualização de aparelhos parados há mais de 24 horas.</li>
+        </ul>
+      </div>
+
+      <!-- TODAS AS OSS -->
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">📑</div>
+            <div>
+              <div class="menu-name">Todas as OSs (Auditoria e Histórico Geral)</div>
+            </div>
+          </div>
+          <span class="menu-route">/os</span>
+        </div>
+        <p class="menu-desc">
+          Arquivo digital unificado de todas as ordens de serviço com filtros avançados e busca inteligente.
+        </p>
+        <ul class="feature-list">
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Busca Universal:</strong> Localização por número de OS, IMEI, Serial, Cliente ou Placa.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Segunda Via & Garantia:</strong> Reimpressão de termos com QR Code de consulta online.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Exportação de Dados:</strong> Relatórios detalhados para prestação de contas.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Histórico de Intervenções:</strong> Registro de quem mexeu no aparelho em cada etapa.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PÁGINA 3: ESTOQUE E FINANCEIRO -->
+  <div class="page-container page-break">
+    <div class="header-bar">
+      <div class="logo-mini">EVORIX TechOS</div>
+      <div class="doc-title">Módulos de Estoque & Finanças</div>
+    </div>
+
+    <h2 class="section-title">3. Menu: Evorix Stock (Gestão de Peças & Suprimentos)</h2>
+    <p class="section-intro">
+      Projetado para eliminar os dois maiores ralos de dinheiro de uma assistência: peças sumidas e clientes esperando porque faltou componente.
+    </p>
+
+    <div class="menu-grid">
+      <!-- CATÁLOGO DE PEÇAS -->
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">📦</div>
+            <div>
+              <div class="menu-name">Catálogo de Peças (Estoque Físico)</div>
+            </div>
+          </div>
+          <span class="menu-route">/estoque</span>
+        </div>
+        <p class="menu-desc">
+          Cadastro técnico de telas, baterias, flats, conectores, periféricos e acessórios para revenda.
+        </p>
+        <ul class="feature-list">
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Localização Física (Gaveta/Prateleira):</strong> Indica exatamente a gaveta onde o item está guardado.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Preço de Custo vs. Balcão:</strong> Cálculo automático da margem bruta de cada peça.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Compatibilidade de Modelos:</strong> Vinculação por marca e linha de aparelho.</li>
+          <li class="feature-item"><span class="bullet">✓</span> <strong>Histórico de Movimentações:</strong> Rastreia entradas de compras e saídas em OSs.</li>
+        </ul>
+      </div>
+
+      <!-- SEMÁFORO DE RUPTURA -->
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">🚦</div>
+            <div>
+              <div class="menu-name">Semáforo de Ruptura (Controle Preditivo)</div>
+            </div>
+          </div>
+          <div style="display:flex; gap: 6px; align-items:center;">
+            <span class="badge-tag">Preditivo</span>
+            <span class="menu-route">/estoque/ruptura</span>
+          </div>
+        </div>
+        <p class="menu-desc">
+          Classificação inteligente por cores das peças mais utilizadas na bancada:
+        </p>
+        <ul class="feature-list">
+          <li class="feature-item"><span class="bullet">🔴</span> <strong>Crítico (Vermelho):</strong> Saldo zerado ou abaixo da reserva de segurança imediata.</li>
+          <li class="feature-item"><span class="bullet">🟡</span> <strong>Alerta (Amarelo):</strong> Peça atingindo o ponto de reposição recomendado.</li>
+          <li class="feature-item"><span class="bullet">🟢</span> <strong>Estável (Verde):</strong> Saldo suficiente para cobrir os próximos 15 a 30 dias de bancada.</li>
+        </ul>
+      </div>
+
+      <!-- CENTRAL DE COMPRAS -->
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">🛒</div>
+            <div>
+              <div class="menu-name">Central de Compras</div>
+            </div>
+          </div>
+          <span class="menu-route">/estoque/compras</span>
+        </div>
+        <p class="menu-desc">
+          Gera listas de compra inteligentes baseadas na média de saída da oficina, evitando compras em excesso.
+        </p>
+      </div>
+    </div>
+
+    <h2 class="section-title" style="margin-top: 24px;">4. Menu: Evorix Finance (Gestão Financeira & ERP)</h2>
+    <p class="section-intro">
+      O lojista descobre o lucro líquido real do negócio, sem misturar dinheiro do caixa com despesas pessoais.
+    </p>
+
+    <div class="menu-grid">
+      <!-- TÍTULOS -->
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">💳</div>
+            <div>
+              <div class="menu-name">Títulos (Contas a Pagar & Receber)</div>
+            </div>
+          </div>
+          <span class="menu-route">/financeiro/titulos</span>
+        </div>
+        <p class="menu-desc">
+          Controle de contas a pagar (fornecedores de peças, aluguel, energia, ferramentas) e recebíveis de clientes (Pix, cartão, dinheiro).
+        </p>
+      </div>
+
+      <!-- CONCILIAÇÃO & DRE -->
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">📈</div>
+            <div>
+              <div class="menu-name">DRE em Tempo Real & Conciliação Bancária</div>
+            </div>
+          </div>
+          <div style="display:flex; gap: 6px; align-items:center;">
+            <span class="badge-tag blue">Gestão Avançada</span>
+            <span class="menu-route">/financeiro/dre</span>
+          </div>
+        </div>
+        <p class="menu-desc">
+          Demonstrativo de Resultados do Exercício automatizado com cálculo de CMV (Custo de Mercadoria Vendida) e conciliação de extratos bancários (OFX).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PÁGINA 4: AI MENTOR, CONFIGURAÇÕES E RESUMO -->
+  <div class="page-container page-break">
+    <div class="header-bar">
+      <div class="logo-mini">EVORIX TechOS</div>
+      <div class="doc-title">Inteligência Artificial & Governança</div>
+    </div>
+
+    <h2 class="section-title">5. Menu: Evorix AI Mentor (Inteligência Estratégica)</h2>
+    <p class="section-intro">
+      Um consultor de negócios especialista em assistências técnicas embutido dentro da plataforma.
+    </p>
+
+    <div class="menu-grid">
+      <div class="menu-card avoid-break">
+        <div class="menu-card-header">
+          <div class="menu-title-wrap">
+            <div class="menu-icon">🤖</div>
+            <div>
+              <div class="menu-name">Centro dos 5 Pilares & Copiloto IA</div>
+            </div>
+          </div>
+          <div style="display:flex; gap: 6px; align-items:center;">
+            <span class="badge-tag purple">IA Exclusiva</span>
+            <span class="menu-route">/mentor & /mentor/chat</span>
+          </div>
+        </div>
+        <p class="menu-desc">
+          Avalia os 5 pilares do negócio (Operação, Finanças, Estoque, Vendas e Liderança) e oferece um chat inteligente que orienta na precificação de reparos difíceis, cálculo de comissões e estratégias de captação de clientes.
+        </p>
+      </div>
+    </div>
+
+    <h2 class="section-title" style="margin-top: 20px;">6. Tabela-Resumo: "Menu vs. Ação Prática vs. Benefício"</h2>
+
+    <table class="summary-table avoid-break">
+      <thead>
+        <tr>
+          <th style="width: 22%;">Menu</th>
+          <th style="width: 48%;">O Que Ele Faz</th>
+          <th style="width: 30%;">Benefício Imediato</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Visão Geral</strong></td>
+          <td>Exibe faturamento, total de OSs ativas e alertas de peças zeradas.</td>
+          <td>Tomada de decisão em 10 segundos ao abrir a loja.</td>
+        </tr>
+        <tr>
+          <td><strong>Nova OS</strong></td>
+          <td>Check-in com fotos, checklist de 20+ itens, seleção de peças e assinatura digital.</td>
+          <td><strong>Proteção jurídica total</strong> contra acusações indevidas.</td>
+        </tr>
+        <tr>
+          <td><strong>Kanban de Bancada</strong></td>
+          <td>Arrasta ordens de serviço entre colunas e dispara baixa de peças no estoque.</td>
+          <td>Elimina papéis e acelera a entrega em até 40%.</td>
+        </tr>
+        <tr>
+          <td><strong>Catálogo de Peças</strong></td>
+          <td>Cadastra peças com gaveta física, preço de custo e preço de venda.</td>
+          <td>Técnico acha a peça na gaveta sem perder tempo.</td>
+        </tr>
+        <tr>
+          <td><strong>Semáforo de Ruptura</strong></td>
+          <td>Avisa com cores (verde, amarelo, vermelho) peças que vão acabar.</td>
+          <td>Nunca mais perde serviço por falta de peça.</td>
+        </tr>
+        <tr>
+          <td><strong>Títulos & DRE</strong></td>
+          <td>Controla pagamentos, contas a receber e calcula lucro líquido real.</td>
+          <td>Clareza absoluta do lucro que sobra no fim do mês.</td>
+        </tr>
+        <tr>
+          <td><strong>AI Mentor</strong></td>
+          <td>Diagnóstico de maturidade e chat consultivo para a assistência.</td>
+          <td>Apoio consultivo contínuo para o dono da loja crescer.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="highlight-box avoid-break" style="margin-top: 25px;">
+      <span style="font-size: 16pt;">💡</span>
+      <div>
+        <strong>Conclusão para Apresentação Comercial:</strong>
+        O Evorix unifica em um único sistema tudo o que antes exigia 3 ou 4 ferramentas separadas (sistema de OS, planilhas de estoque, cadernos de gaveta e controle de caixa), entregando segurança jurídica intransponível e elegância visual.
+      </div>
+    </div>
+
+    <div class="footer-note">
+      EVORIX TechOS • Tecnologia de Alta Performance para Assistências Técnicas • Documento Oficial de Especificação
+    </div>
+  </div>
+
+</body>
+</html>

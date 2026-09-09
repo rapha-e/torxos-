@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B0B0C"/>
+      <stop offset="50%" stop-color="#121214"/>
+      <stop offset="100%" stop-color="#18181B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bgGrad)"/>
+  <rect x="40" y="40" width="1000" height="1000" rx="32" fill="none" stroke="#27272A" stroke-width="2"/>
+  
+  <!-- Top Bar -->
+  <g transform="translate(80, 100)">
+    <!-- Mini Logo TorxOS -->
+    <path d="M 0,-14 L 10,-8 L 10,4 L 0,10 L -10,4 L -10,-8 Z" fill="url(#goldGrad)" transform="translate(14, 0) scale(1.2)"/>
+    <text x="40" y="5" font-family="'Inter', -apple-system, sans-serif" font-size="24" font-weight="900" fill="#FFFFFF" letter-spacing="3">TORX<tspan fill="#F59E0B">OS</tspan></text>
+    <text x="210" y="5" font-family="'Inter', -apple-system, sans-serif" font-size="16" font-weight="500" fill="#71717A">| SISTEMAS</text>
+    <text x="920" y="5" text-anchor="end" font-family="'Inter', -apple-system, sans-serif" font-size="20" font-weight="700" fill="#A1A1AA">1 / 6</text>
+  </g>
+
+  <!-- Tag Pill -->
+  <g transform="translate(80, 180)">
+    <rect width="280" height="42" rx="10" fill="#27272A" stroke="#3F3F46" stroke-width="1"/>
+    <text x="140" y="27" text-anchor="middle" font-family="'Inter', -apple-system, sans-serif" font-size="13" font-weight="800" fill="#FBBF24" letter-spacing="1.5">ATENDIMENTO CLIENTE</text>
+  </g>
+
+  <!-- Title -->
+  <g transform="translate(80, 340)">
+    <text x="0" y="0" font-family="'Inter', -apple-system, sans-serif" font-size="56" font-weight="900" fill="#FFFFFF">
+      <tspan x="0" dy="0">Como Acabar com as Mensagens</tspan><tspan x="0" dy="1.25em">Como Acabar com as Mensagens</tspan><tspan x="0" dy="1.25em">Como Acabar com as Mensagens</tspan><tspan x="0" dy="1.25em">Como Acabar com as Mensagens</tspan><tspan x="0" dy="1.25em">Como Acabar com as Mensagens</tspan><tspan x="0" dy="1.25em">Como Acabar com as Mensagens</tspan>
+    </text>
+  </g>
+
+  <!-- Subtitle -->
+  <g transform="translate(80, 600)">
+    <text x="0" y="0" font-family="'Inter', -apple-system, sans-serif" font-size="28" font-weight="400" fill="#A1A1AA">
+      <tspan x="0" dy="0">O atendimento via WhatsApp consome até 2 horas</tspan><tspan x="0" dy="1.25em">O atendimento via WhatsApp consome até 2 horas</tspan><tspan x="0" dy="1.25em">O atendimento via WhatsApp consome até 2 horas</tspan><tspan x="0" dy="1.25em">O atendimento via WhatsApp consome até 2 horas</tspan><tspan x="0" dy="1.25em">O atendimento via WhatsApp consome até 2 horas</tspan><tspan x="0" dy="1.25em">O atendimento via WhatsApp consome até 2 horas</tspan><tspan x="0" dy="1.25em">O atendimento via WhatsApp consome até 2 horas</tspan><tspan x="0" dy="1.25em">O atendimento via WhatsApp consome até 2 horas</tspan>
+    </text>
+  </g>
+
+  <!-- Bullets -->
+  
+
+  <!-- Footer Divider & Account Info -->
+  <line x1="80" y1="940" x2="1000" y2="940" stroke="#27272A" stroke-width="1.5"/>
+  <g transform="translate(80, 990)">
+    <text x="0" y="0" font-family="'Inter', -apple-system, sans-serif" font-size="20" font-weight="700" fill="#FBBF24">Arraste para o lado 👉</text>
+    <text x="920" y="0" text-anchor="end" font-family="'Inter', -apple-system, sans-serif" font-size="18" font-weight="600" fill="#A1A1AA">@torxos.oficial</text>
+  </g>
+</svg>
