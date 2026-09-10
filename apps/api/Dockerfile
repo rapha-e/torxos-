@@ -5,6 +5,9 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
+# Instala OpenSSL e bibliotecas de compatibilidade para Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 WORKDIR /app
 
 # Copia arquivos de dependência do monorepo
@@ -27,6 +30,9 @@ RUN npm run build
 
 # Stage 2: Runtime
 FROM node:20-alpine AS runner
+
+# Instala OpenSSL no runtime do Alpine
+RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 ENV NODE_ENV=production
