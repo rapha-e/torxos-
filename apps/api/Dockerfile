@@ -48,4 +48,4 @@ USER nestjs
 EXPOSE 3001
 
 WORKDIR /app/apps/api
-CMD ["sh", "-c", "if [ -f dist/src/main.js ]; then node dist/src/main.js; else node dist/main.js; fi"]
+CMD ["npm", "run", "start:prod"]
