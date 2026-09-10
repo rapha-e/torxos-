@@ -340,25 +340,42 @@ export class SocialService {
 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://torxos.tech";
-      const fallbackImageUrl =
-        "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=1080&auto=format&fit=crop";
+      const totalSlides = dto.postData?.slides?.length || 6;
+      const postCaption = dto.postData?.caption || "";
 
-      const firstSlide = dto.postData?.slides?.[0];
-      const generatedSlideUrl = firstSlide
-        ? `${baseUrl}/api/v1/social/render-slide-png?title=${encodeURIComponent(firstSlide.title)}&subtitle=${encodeURIComponent(firstSlide.subtitle || '')}&badge=${encodeURIComponent(firstSlide.badge || 'TORXOS')}&slide=1&total=${dto.postData?.slides?.length || 6}&type=COVER`
-        : null;
+      // Gera e garante URLs dinâmicas dos slides renderizados em PNG pelo Sharp
+      const processedSlides = (dto.postData?.slides || []).map((s: any, idx: number) => {
+        const num = s.slideNumber || idx + 1;
+        const bulletsParam = s.bullets && s.bullets.length > 0 ? `&bullets=${encodeURIComponent(JSON.stringify(s.bullets))}` : "";
+        const slideUrl = `${baseUrl}/api/v1/social/render-slide-png?title=${encodeURIComponent(s.title || '')}&subtitle=${encodeURIComponent(s.subtitle || '')}&badge=${encodeURIComponent(s.badge || 'BANCADA & TÉCNICA')}&slide=${num}&total=${totalSlides}&type=${s.type || (num === 1 ? 'COVER' : num === totalSlides ? 'CTA' : 'CONTENT')}${bulletsParam}`;
+        return {
+          ...s,
+          slideNumber: num,
+          imageUrl: slideUrl,
+          image_url: slideUrl,
+          url: slideUrl,
+          foto: slideUrl,
+        };
+      });
 
-      const targetImageUrl = dto.postData?.imageUrl || generatedSlideUrl || fallbackImageUrl;
+      const mainImageUrl = processedSlides[0]?.imageUrl || `${baseUrl}/api/v1/social/render-slide-png?title=TorxOS&slide=1&total=${totalSlides}`;
 
       const enrichedData = {
         ...dto.postData,
-        imageUrl: targetImageUrl,
-        image_url: targetImageUrl,
-        slides: (dto.postData?.slides || []).map((s: any) => ({
-          ...s,
-          imageUrl: s.imageUrl || targetImageUrl,
-          image_url: s.imageUrl || targetImageUrl,
-        })),
+        caption: postCaption,
+        legenda: postCaption,
+        texto: postCaption,
+        imageUrl: mainImageUrl,
+        image_url: mainImageUrl,
+        url: mainImageUrl,
+        foto: mainImageUrl,
+        slides: processedSlides,
+        slide1_url: processedSlides[0]?.imageUrl || mainImageUrl,
+        slide2_url: processedSlides[1]?.imageUrl || "",
+        slide3_url: processedSlides[2]?.imageUrl || "",
+        slide4_url: processedSlides[3]?.imageUrl || "",
+        slide5_url: processedSlides[4]?.imageUrl || "",
+        slide6_url: processedSlides[5]?.imageUrl || "",
       };
 
       const response = await fetch(dto.webhookUrl, {
@@ -371,10 +388,19 @@ export class SocialService {
           event: "SOCIAL_POST_SCHEDULED",
           channel: dto.channel || "INSTAGRAM",
           timestamp: new Date().toISOString(),
+          caption: postCaption,
+          legenda: postCaption,
+          texto: postCaption,
+          imageUrl: mainImageUrl,
+          image_url: mainImageUrl,
           data: enrichedData,
-          imageUrl: targetImageUrl,
-          image_url: targetImageUrl,
-          caption: dto.postData?.caption || "",
+          slides: processedSlides,
+          slide1_url: processedSlides[0]?.imageUrl || mainImageUrl,
+          slide2_url: processedSlides[1]?.imageUrl || "",
+          slide3_url: processedSlides[2]?.imageUrl || "",
+          slide4_url: processedSlides[3]?.imageUrl || "",
+          slide5_url: processedSlides[4]?.imageUrl || "",
+          slide6_url: processedSlides[5]?.imageUrl || "",
           hashtags: dto.postData?.hashtags || [],
         }),
       });
