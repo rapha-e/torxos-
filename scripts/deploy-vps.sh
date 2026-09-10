@@ -55,9 +55,9 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" pull || {
     echo -e "${YELLOW}⚠️ Aviso: Falha ao puxar do GHCR ou usando build local. Continuando...${NC}"
 }
 
-# 5. Subir contêineres em segundo plano (com remoção de órfãos como o MinIO antigo)
+# 5. Subir contêineres em segundo plano e compilar imagens locais
 echo -e "\n${BLUE}📦 Inicializando contêineres em produção...${NC}"
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --remove-orphans
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build --remove-orphans
 
 # 6. Aguardar inicialização do PostgreSQL e API
 echo -e "\n${BLUE}⏳ Aguardando serviços ficarem operacionais...${NC}"
