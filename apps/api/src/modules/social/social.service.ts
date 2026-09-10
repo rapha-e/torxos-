@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import sharp from "sharp";
 import {
   GenerateCarouselDto,
   GenerateWeeklyPackDto,
@@ -16,6 +17,7 @@ export interface CarouselSlide {
   bullets?: string[];
   footer: string;
   svgCode?: string;
+  imageUrl?: string;
 }
 
 export interface GeneratedSocialPost {
@@ -27,6 +29,7 @@ export interface GeneratedSocialPost {
   hashtags: string[];
   suggestedScheduleDay: string;
   slides: CarouselSlide[];
+  imageUrl?: string;
   createdAt: string;
 }
 
@@ -247,6 +250,14 @@ export class SocialService {
     // Constrói a legenda completa do post com quebras de linha e hashtags
     const caption = this.buildPostCaption(title, subtitle, points, baseTopic.ctaText, pillar);
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://torxos.tech";
+    slides.forEach((s) => {
+      const bulletsParam = s.bullets && s.bullets.length > 0 ? `&bullets=${encodeURIComponent(JSON.stringify(s.bullets))}` : "";
+      s.imageUrl = `${baseUrl}/api/v1/social/render-slide-png?title=${encodeURIComponent(s.title)}&subtitle=${encodeURIComponent(s.subtitle || '')}&badge=${encodeURIComponent(s.badge)}&slide=${s.slideNumber}&total=${totalSlides}&type=${s.type}${bulletsParam}`;
+    });
+
+    const mainImageUrl = slides[0]?.imageUrl || `${baseUrl}/api/v1/social/render-slide-png?title=${encodeURIComponent(title)}&slide=1&total=${totalSlides}`;
+
     return {
       id: `post_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       pillar,
@@ -256,8 +267,37 @@ export class SocialService {
       hashtags: this.getHashtagsForPillar(pillar),
       suggestedScheduleDay: "Quarta-feira às 12:30",
       slides,
+      imageUrl: mainImageUrl,
       createdAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Converte um slide SVG diretamente para imagem PNG 1080x1080 em alta resolução usando Sharp
+   */
+  async renderSlideToPng(params: {
+    title: string;
+    subtitle?: string;
+    badge?: string;
+    slideNumber: number;
+    totalSlides: number;
+    type?: "COVER" | "CONTENT" | "CTA";
+    bullets?: string[];
+  }): Promise<Buffer> {
+    const slideNumber = Number(params.slideNumber) || 1;
+    const totalSlides = Number(params.totalSlides) || 6;
+    const slide: CarouselSlide = {
+      slideNumber,
+      type: params.type || (slideNumber === 1 ? "COVER" : slideNumber === totalSlides ? "CTA" : "CONTENT"),
+      badge: params.badge || "DICA DE BANCADA",
+      title: params.title || "TorxOS - Gestão de Assistência",
+      subtitle: params.subtitle || "",
+      bullets: params.bullets,
+      footer: slideNumber === 1 ? "Arraste para o lado 👉" : "TorxOS Sistemas • Gestão de Assistência",
+    };
+
+    const svgCode = this.renderSlideSvg(slide, slideNumber, totalSlides);
+    return sharp(Buffer.from(svgCode), { density: 150 }).png().toBuffer();
   }
 
   /**
@@ -299,17 +339,25 @@ export class SocialService {
     this.logger.log(`Disparando webhook social para: ${dto.webhookUrl}`);
 
     try {
-      const defaultImageUrl =
-        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=1080&auto=format&fit=crop";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://torxos.tech";
+      const fallbackImageUrl =
+        "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=1080&auto=format&fit=crop";
+
+      const firstSlide = dto.postData?.slides?.[0];
+      const generatedSlideUrl = firstSlide
+        ? `${baseUrl}/api/v1/social/render-slide-png?title=${encodeURIComponent(firstSlide.title)}&subtitle=${encodeURIComponent(firstSlide.subtitle || '')}&badge=${encodeURIComponent(firstSlide.badge || 'TORXOS')}&slide=1&total=${dto.postData?.slides?.length || 6}&type=COVER`
+        : null;
+
+      const targetImageUrl = dto.postData?.imageUrl || generatedSlideUrl || fallbackImageUrl;
 
       const enrichedData = {
         ...dto.postData,
-        imageUrl: dto.postData?.imageUrl || defaultImageUrl,
-        image_url: dto.postData?.imageUrl || defaultImageUrl,
+        imageUrl: targetImageUrl,
+        image_url: targetImageUrl,
         slides: (dto.postData?.slides || []).map((s: any) => ({
           ...s,
-          imageUrl: s.imageUrl || defaultImageUrl,
-          image_url: s.imageUrl || defaultImageUrl,
+          imageUrl: s.imageUrl || targetImageUrl,
+          image_url: s.imageUrl || targetImageUrl,
         })),
       };
 
@@ -324,8 +372,10 @@ export class SocialService {
           channel: dto.channel || "INSTAGRAM",
           timestamp: new Date().toISOString(),
           data: enrichedData,
-          imageUrl: defaultImageUrl,
-          image_url: defaultImageUrl,
+          imageUrl: targetImageUrl,
+          image_url: targetImageUrl,
+          caption: dto.postData?.caption || "",
+          hashtags: dto.postData?.hashtags || [],
         }),
       });
 

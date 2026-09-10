@@ -3,12 +3,15 @@ import {
   Get,
   Post,
   Body,
+  Query,
+  Res,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { FastifyReply } from "fastify";
+import { JwtAuthGuard, Public } from "../auth/guards/jwt-auth.guard";
 import { Roles } from "../../common/guards/roles.guard";
 import { UserRole } from "../../common/enums";
 import { SocialService } from "./social.service";
@@ -25,6 +28,43 @@ import {
 @ApiBearerAuth()
 export class SocialController {
   constructor(private readonly socialService: SocialService) {}
+
+  @Public()
+  @Get("render-slide-png")
+  @ApiOperation({
+    summary: "Renderiza um slide oficial do TorxOS para imagem PNG 1080x1080 em alta definição para o Instagram",
+  })
+  async renderSlidePng(
+    @Query("title") title: string,
+    @Query("subtitle") subtitle: string,
+    @Query("badge") badge: string,
+    @Query("slide") slide: number,
+    @Query("total") total: number,
+    @Query("type") type: any,
+    @Query("bullets") bulletsJson: string,
+    @Res() res: FastifyReply,
+  ) {
+    let bullets: string[] | undefined = undefined;
+    if (bulletsJson) {
+      try {
+        bullets = JSON.parse(bulletsJson);
+      } catch {}
+    }
+
+    const pngBuffer = await this.socialService.renderSlideToPng({
+      title: title || "TorxOS - Gestão de Assistência",
+      subtitle: subtitle || "",
+      badge: badge || "BANCADA & TÉCNICA",
+      slideNumber: Number(slide) || 1,
+      totalSlides: Number(total) || 6,
+      type: type || (Number(slide) === 1 ? "COVER" : "CONTENT"),
+      bullets,
+    });
+
+    res.header("Content-Type", "image/png");
+    res.header("Cache-Control", "public, max-age=86400");
+    return res.send(pngBuffer);
+  }
 
   @Get("presets")
   @ApiOperation({
