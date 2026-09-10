@@ -253,10 +253,10 @@ export class SocialService {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://torxos.tech";
     slides.forEach((s) => {
       const bulletsParam = s.bullets && s.bullets.length > 0 ? `&bullets=${encodeURIComponent(JSON.stringify(s.bullets))}` : "";
-      s.imageUrl = `${baseUrl}/api/v1/social/render-slide-png?title=${encodeURIComponent(s.title)}&subtitle=${encodeURIComponent(s.subtitle || '')}&badge=${encodeURIComponent(s.badge)}&slide=${s.slideNumber}&total=${totalSlides}&type=${s.type}${bulletsParam}`;
+      s.imageUrl = `${baseUrl}/api/v1/social/slide-${s.slideNumber}.png?title=${encodeURIComponent(s.title)}&subtitle=${encodeURIComponent(s.subtitle || '')}&badge=${encodeURIComponent(s.badge)}&total=${totalSlides}&type=${s.type}${bulletsParam}`;
     });
 
-    const mainImageUrl = slides[0]?.imageUrl || `${baseUrl}/api/v1/social/render-slide-png?title=${encodeURIComponent(title)}&slide=1&total=${totalSlides}`;
+    const mainImageUrl = slides[0]?.imageUrl || `${baseUrl}/api/v1/social/slide-1.png?title=${encodeURIComponent(title)}&total=${totalSlides}`;
 
     return {
       id: `post_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -347,7 +347,7 @@ export class SocialService {
       const processedSlides = (dto.postData?.slides || []).map((s: any, idx: number) => {
         const num = s.slideNumber || idx + 1;
         const bulletsParam = s.bullets && s.bullets.length > 0 ? `&bullets=${encodeURIComponent(JSON.stringify(s.bullets))}` : "";
-        const slideUrl = `${baseUrl}/api/v1/social/render-slide-png?title=${encodeURIComponent(s.title || '')}&subtitle=${encodeURIComponent(s.subtitle || '')}&badge=${encodeURIComponent(s.badge || 'BANCADA & TÉCNICA')}&slide=${num}&total=${totalSlides}&type=${s.type || (num === 1 ? 'COVER' : num === totalSlides ? 'CTA' : 'CONTENT')}${bulletsParam}`;
+        const slideUrl = `${baseUrl}/api/v1/social/slide-${num}.png?title=${encodeURIComponent(s.title || '')}&subtitle=${encodeURIComponent(s.subtitle || '')}&badge=${encodeURIComponent(s.badge || 'BANCADA & TÉCNICA')}&total=${totalSlides}&type=${s.type || (num === 1 ? 'COVER' : num === totalSlides ? 'CTA' : 'CONTENT')}${bulletsParam}`;
         return {
           ...s,
           slideNumber: num,
@@ -358,7 +358,7 @@ export class SocialService {
         };
       });
 
-      const mainImageUrl = processedSlides[0]?.imageUrl || `${baseUrl}/api/v1/social/render-slide-png?title=TorxOS&slide=1&total=${totalSlides}`;
+      const mainImageUrl = processedSlides[0]?.imageUrl || `${baseUrl}/api/v1/social/slide-1.png?title=TorxOS&total=${totalSlides}`;
 
       const enrichedData = {
         ...dto.postData,

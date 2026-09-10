@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Query,
+  Param,
   Res,
   UseGuards,
   HttpCode,
@@ -24,10 +25,36 @@ import {
 @ApiTags("Social Media & Automação de Postagens")
 @Controller("social")
 @UseGuards(JwtAuthGuard)
-@Roles(UserRole.SUPER_ADMIN)
 @ApiBearerAuth()
 export class SocialController {
   constructor(private readonly socialService: SocialService) {}
+
+  @Public()
+  @Get("slide-:slideNumber.png")
+  @ApiOperation({
+    summary: "Renderiza um slide PNG com extensão explícita compatível com validadores do Instagram",
+  })
+  async renderSlideWithExtension(
+    @Param("slideNumber") slideNumberParam: string,
+    @Query("title") title: string,
+    @Query("subtitle") subtitle: string,
+    @Query("badge") badge: string,
+    @Query("total") total: number,
+    @Query("type") type: any,
+    @Query("bullets") bulletsJson: string,
+    @Res() res: FastifyReply,
+  ) {
+    return this.handleRenderSlide(
+      title,
+      subtitle,
+      badge,
+      Number(slideNumberParam) || 1,
+      total,
+      type,
+      bulletsJson,
+      res,
+    );
+  }
 
   @Public()
   @Get("render-slide-png")
@@ -44,6 +71,28 @@ export class SocialController {
     @Query("bullets") bulletsJson: string,
     @Res() res: FastifyReply,
   ) {
+    return this.handleRenderSlide(
+      title,
+      subtitle,
+      badge,
+      Number(slide) || 1,
+      total,
+      type,
+      bulletsJson,
+      res,
+    );
+  }
+
+  private async handleRenderSlide(
+    title: string,
+    subtitle: string,
+    badge: string,
+    slideNumber: number,
+    total: number,
+    type: any,
+    bulletsJson: string,
+    res: FastifyReply,
+  ) {
     let bullets: string[] | undefined = undefined;
     if (bulletsJson) {
       try {
@@ -55,9 +104,9 @@ export class SocialController {
       title: title || "TorxOS - Gestão de Assistência",
       subtitle: subtitle || "",
       badge: badge || "BANCADA & TÉCNICA",
-      slideNumber: Number(slide) || 1,
+      slideNumber,
       totalSlides: Number(total) || 6,
-      type: type || (Number(slide) === 1 ? "COVER" : "CONTENT"),
+      type: type || (slideNumber === 1 ? "COVER" : "CONTENT"),
       bullets,
     });
 
@@ -67,6 +116,7 @@ export class SocialController {
   }
 
   @Get("presets")
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: "Lista pilares, temas de bancada e hashtags recomendadas para redes sociais",
   })
@@ -76,6 +126,7 @@ export class SocialController {
   }
 
   @Post("generate-carousel")
+  @Roles(UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Gera carrossel educativo para Instagram com slides formatados e SVG de alta resolução",
@@ -86,6 +137,7 @@ export class SocialController {
   }
 
   @Post("generate-weekly-pack")
+  @Roles(UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Gera pacote semanal completo de postagens (Segunda, Quarta e Sexta)",
@@ -96,6 +148,7 @@ export class SocialController {
   }
 
   @Post("dispatch-webhook")
+  @Roles(UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Dispara webhook com o post formatado para n8n, Make, Buffer ou Zapier",
