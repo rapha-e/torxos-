@@ -12,7 +12,8 @@
     "start:prod": "node dist/src/main",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:seed:prod": "node dist/prisma/seed.js"
   },
   "dependencies": {
     "@fastify/static": "^7.0.4",

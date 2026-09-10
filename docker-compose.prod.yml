@@ -88,12 +88,17 @@ services:
       - SERVER_URL=http://localhost:8080
       - AUTHENTICATION_TYPE=apikey
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-evorix_global_wpp_secret}
-      - DATABASE_ENABLED=false
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://${POSTGRES_USER:-evorix_user}:${POSTGRES_PASSWORD:-evorix_secure_password}@evorix_postgres:5432/${POSTGRES_DB:-evorix_db}?schema=evolution_api
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_api
       - CACHE_REDIS_ENABLED=true
       - CACHE_REDIS_URI=redis://evorix_redis:6379/1
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
+      evorix_postgres:
+        condition: service_healthy
       evorix_redis:
         condition: service_healthy
     deploy:
