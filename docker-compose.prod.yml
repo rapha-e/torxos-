@@ -98,7 +98,10 @@ services:
   # 4. Backend NestJS 10 (Fastify + Prisma Engine + Cloudflare R2 + Gemini)
   # ---------------------------------------------------------------------------
   evorix_api:
-    image: ${DOCKER_IMAGE_API:-ghcr.io/seu-usuario/torxos-api:latest}
+    image: ${DOCKER_IMAGE_API:-torxos-api:latest}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: evorix_api
     restart: always
     environment:
@@ -145,7 +148,10 @@ services:
   # 5. Frontend Next.js 14 Standalone (Luxury Off-White Design System)
   # ---------------------------------------------------------------------------
   evorix_web:
-    image: ${DOCKER_IMAGE_WEB:-ghcr.io/seu-usuario/torxos-web:latest}
+    image: ${DOCKER_IMAGE_WEB:-torxos-web:latest}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
     container_name: evorix_web
     restart: always
     environment:
