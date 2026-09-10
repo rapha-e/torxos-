@@ -55,6 +55,7 @@ model Tenant {
   email                 String                 @db.VarChar(100)
   plan                  String                 @default("PRO") @db.VarChar(30)
   isActive              Boolean                @default(true) @map("is_active")
+  logoUrl               String?                @map("logo_url") @db.Text
   settings              Json?                  @default("{\"currency\": \"BRL\", \"enable_whatsapp_auto\": true}")
   parentTenantId        String?                @map("parent_tenant_id") @db.Uuid
   isHeadquarter         Boolean                @default(true) @map("is_headquarter")
@@ -83,7 +84,7 @@ model User {
   id                        String                 @id @default(uuid()) @db.Uuid
   tenantId                  String?                @map("tenant_id") @db.Uuid
   name                      String                 @db.VarChar(120)
-  email                     String                 @db.VarChar(150)
+  email                     String                 @unique @db.VarChar(150)
   passwordHash              String                 @map("password_hash") @db.VarChar(255)
   role                      UserRole               @default(ATTENDANT)
   commissionServicesPercent Decimal                @default(0.00) @map("commission_services_percent") @db.Decimal(5, 2)
@@ -145,6 +146,7 @@ model Product {
   dailyAvgConsumption    Decimal            @default(0.0000) @map("daily_avg_consumption") @db.Decimal(10, 4)
   daysUntilStockout      Int                @default(999) @map("days_until_stockout")
   stockoutRiskStatus     String             @default("HEALTHY") @map("stockout_risk_status") @db.VarChar(20)
+  imageUrl               String?            @map("image_url") @db.Text
 
   isActive               Boolean            @default(true) @map("is_active")
   createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamptz
@@ -186,6 +188,9 @@ model ServiceOrder {
   totalDiscount       Decimal                @default(0.00) @map("total_discount") @db.Decimal(15, 2)
   netTotal            Decimal                @default(0.00) @map("net_total") @db.Decimal(15, 2)
 
+  stockDeducted       Boolean                @default(false) @map("stock_deducted")
+  stockDeductedAt     DateTime?              @map("stock_deducted_at") @db.Timestamptz
+
   warrantyTerms       String?                @map("warranty_terms") @db.Text
   warrantyPeriodDays  Int                    @default(90) @map("warranty_period_days")
   deliveryDeadline    DateTime?              @map("delivery_deadline") @db.Timestamptz
@@ -218,6 +223,8 @@ model ServiceOrderItem {
   totalAmount        Decimal      @map("total_amount") @db.Decimal(15, 2)
   technicianId       String?      @map("technician_id") @db.Uuid
   commissionAmount   Decimal      @default(0.00) @map("commission_amount") @db.Decimal(15, 2)
+  stockDeducted      Boolean      @default(false) @map("stock_deducted")
+  stockDeductedAt    DateTime?    @map("stock_deducted_at") @db.Timestamptz
   isApprovedByClient Boolean      @default(true) @map("is_approved_by_client")
 
   tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)

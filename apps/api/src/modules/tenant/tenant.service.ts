@@ -232,7 +232,7 @@ export class TenantService {
         name: dto.name,
         email: dto.email,
         passwordHash,
-        role: dto.role || "TECHNICIAN",
+        role: (dto.role as any) || "TECHNICIAN",
         commissionServicesPercent: dto.commissionServicesPercent || 0,
         commissionProductsPercent: dto.commissionProductsPercent || 0,
       },
