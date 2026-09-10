@@ -61,13 +61,13 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build --remove-
 
 # 6. Aguardar inicialização do PostgreSQL e API
 echo -e "\n${BLUE}⏳ Aguardando serviços ficarem operacionais...${NC}"
-sleep 8
+sleep 12
 
 # 7. Executar migrações do PostgreSQL no contêiner da API
 echo -e "\n${BLUE}🗄️ Executando migrações do PostgreSQL (Prisma)...${NC}"
-docker compose -f "$COMPOSE_FILE" exec -T evorix_api npx prisma migrate deploy --schema=./prisma/schema.postgresql.prisma || {
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T evorix_api npx prisma migrate deploy --schema=./prisma/schema.postgresql.prisma || {
     echo -e "${YELLOW}⚠️ Sincronizando schema via db push...${NC}"
-    docker compose -f "$COMPOSE_FILE" exec -T evorix_api npx prisma db push --schema=./prisma/schema.postgresql.prisma --accept-data-loss
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T evorix_api npx prisma db push --schema=./prisma/schema.postgresql.prisma --accept-data-loss
 }
 
 # 8. Status dos contêineres
