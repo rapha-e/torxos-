@@ -205,7 +205,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-zinc-400">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <span>Oficina Conectada • Ao Vivo</span>
+                    <span>Assistência Conectada • Ao Vivo</span>
                   </div>
                 </div>
 
@@ -349,7 +349,7 @@ export default function LandingPage() {
             Diagnóstico de Eficiência
           </span>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-white -tracking-[0.03em] tracking-tight">
-            Sua oficina sofre com algum desses 4 problemas clássicos?
+            Sua assistência técnica sofre com algum desses 4 problemas clássicos?
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400 font-normal">
             Identificamos os maiores gargalos que roubam a energia e o faturamento do dono de assistência técnica.
@@ -404,7 +404,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-base font-bold text-white -tracking-[0.02em]">Caixa Desorganizado sem Saber o Lucro do Mês</h3>
               <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-                Misturar contas pessoais com as da oficina é o caminho mais rápido para quebrar. Com nosso DRE Gerencial automático, você sabe no centavo quanto faturou, quanto gastou e quanto pode retirar de pró-labore.
+                Misturar contas pessoais com as da assistência é o caminho mais rápido para quebrar. Com nosso DRE Gerencial automático, você sabe no centavo quanto faturou, quanto gastou e quanto pode retirar de pró-labore.
               </p>
             </div>
           </div>
@@ -557,7 +557,7 @@ export default function LandingPage() {
               Investimento que se paga logo na primeira semana
             </h2>
             <p className="text-xs sm:text-sm text-zinc-400 font-normal">
-              Comece com 7 dias grátis. Só pague quando tiver certeza que a sua oficina está mais rápida e organizada.
+              Comece com 7 dias grátis. Só pague quando tiver certeza que a sua assistência técnica está mais rápida e organizada.
             </p>
           </div>
 
@@ -568,7 +568,7 @@ export default function LandingPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-base font-bold text-white -tracking-[0.02em]">STARTER</h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">Ideal para técnicos autônomos e oficinas individuais.</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">Ideal para técnicos autônomos e assistências de celular e eletrônicos.</p>
                   </div>
                   <div className="flex items-baseline gap-1 font-mono">
                     <span className="text-sm text-zinc-400">R$</span>

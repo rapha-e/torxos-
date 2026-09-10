@@ -72,6 +72,8 @@ model Tenant {
   chartOfAccounts       ChartOfAccount[]
   bankAccounts          BankAccount[]
   financialTransactions FinancialTransaction[]
+  sales                 Sale[]
+  saleItems             SaleItem[]
   aiMentorSessions      AiMentorSession[]
 
   @@map("tenants")
@@ -79,7 +81,7 @@ model Tenant {
 
 model User {
   id                        String                 @id @default(uuid()) @db.Uuid
-  tenantId                  String                 @map("tenant_id") @db.Uuid
+  tenantId                  String?                @map("tenant_id") @db.Uuid
   name                      String                 @db.VarChar(120)
   email                     String                 @db.VarChar(150)
   passwordHash              String                 @map("password_hash") @db.VarChar(255)
@@ -90,9 +92,10 @@ model User {
   createdAt                 DateTime               @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                 DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  tenant                    Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant                    Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   assignedServiceOrders     ServiceOrder[]         @relation("TechnicianOrders")
   serviceOrderItems         ServiceOrderItem[]     @relation("TechnicianItems")
+  salesAsSeller             Sale[]                 @relation("SellerSales")
   aiMentorSessions          AiMentorSession[]
 
   @@unique([tenantId, email], name: "uq_tenant_user_email")
@@ -115,6 +118,7 @@ model Client {
   tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   serviceOrders         ServiceOrder[]
   financialTransactions FinancialTransaction[]
+  sales                 Sale[]
 
   @@index([tenantId, phone], name: "idx_clients_tenant_phone")
   @@index([tenantId, document], name: "idx_clients_tenant_document")
@@ -148,6 +152,7 @@ model Product {
 
   tenant                 Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   serviceOrderItems      ServiceOrderItem[]
+  saleItems              SaleItem[]
 
   @@index([tenantId, stockoutRiskStatus], name: "idx_products_tenant_stockout")
   @@index([tenantId, barcode], name: "idx_products_tenant_barcode")
@@ -266,6 +271,7 @@ model FinancialTransaction {
   bankAccountId      String?           @map("bank_account_id") @db.Uuid
   clientId           String?           @map("client_id") @db.Uuid
   serviceOrderId     String?           @map("service_order_id") @db.Uuid
+  saleId             String?           @map("sale_id") @db.Uuid
 
   description        String            @db.VarChar(255)
   documentNumber     String?           @map("document_number") @db.VarChar(100)
@@ -291,10 +297,12 @@ model FinancialTransaction {
   bankAccount        BankAccount?      @relation(fields: [bankAccountId], references: [id])
   client             Client?           @relation(fields: [clientId], references: [id])
   serviceOrder       ServiceOrder?     @relation(fields: [serviceOrderId], references: [id])
+  sale               Sale?             @relation(fields: [saleId], references: [id])
 
   @@index([tenantId, dueDate], name: "idx_fin_tenant_due_date")
   @@index([tenantId, status], name: "idx_fin_tenant_status")
   @@index([tenantId, competenceDate], name: "idx_fin_tenant_competence")
+  @@index([saleId], name: "idx_fin_sale_id")
   @@map("financial_transactions")
 }
 
@@ -315,4 +323,53 @@ model AiMentorSession {
 
   @@index([tenantId, pillar], name: "idx_ai_tenant_pillar")
   @@map("ai_mentor_sessions")
+}
+
+model Sale {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  tenantId              String                 @map("tenant_id") @db.Uuid
+  saleNumber            Int                    @default(1001) @map("sale_number")
+  clientId              String?                @map("client_id") @db.Uuid
+  sellerId              String?                @map("seller_id") @db.Uuid
+  totalAmount           Decimal                @default(0.00) @map("total_amount") @db.Decimal(15, 2)
+  discountAmount        Decimal                @default(0.00) @map("discount_amount") @db.Decimal(15, 2)
+  netTotal              Decimal                @default(0.00) @map("net_total") @db.Decimal(15, 2)
+  paymentMethod         String                 @default("PIX") @map("payment_method") @db.VarChar(40)
+  receivedAmount        Decimal?               @default(0.00) @map("received_amount") @db.Decimal(15, 2)
+  changeAmount          Decimal?               @default(0.00) @map("change_amount") @db.Decimal(15, 2)
+  status                String                 @default("COMPLETED") @db.VarChar(30)
+  notes                 String?                @db.Text
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client                Client?                @relation(fields: [clientId], references: [id])
+  seller                User?                  @relation("SellerSales", fields: [sellerId], references: [id])
+  items                 SaleItem[]
+  financialTransactions FinancialTransaction[]
+
+  @@index([tenantId, createdAt], name: "idx_sales_tenant_date")
+  @@index([tenantId, status], name: "idx_sales_tenant_status")
+  @@map("sales")
+}
+
+model SaleItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  saleId          String   @map("sale_id") @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  imeiOrSerial    String?  @map("imei_or_serial") @db.VarChar(100)
+  quantity        Decimal  @default(1.00) @db.Decimal(10, 2)
+  unitCost        Decimal  @default(0.00) @map("unit_cost") @db.Decimal(15, 2)
+  unitPrice       Decimal  @default(0.00) @map("unit_price") @db.Decimal(15, 2)
+  discountAmount  Decimal  @default(0.00) @map("discount_amount") @db.Decimal(15, 2)
+  totalAmount     Decimal  @default(0.00) @map("total_amount") @db.Decimal(15, 2)
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sale            Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id])
+
+  @@index([saleId], name: "idx_sale_items_sale_id")
+  @@index([productId], name: "idx_sale_items_product_id")
+  @@map("sale_items")
 }

@@ -68,7 +68,7 @@ const navigation: NavItem[] = [
   {
     name: "Ordens de Serviço",
     icon: Wrench,
-    badge: "Oficina",
+    badge: "Assistência",
     children: [
       { name: "Kanban de Bancada", href: "/os/kanban" },
       { name: "Todas as OS", href: "/os" },

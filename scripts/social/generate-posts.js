@@ -76,7 +76,7 @@ const topics = {
         "4. Gastos pessoais do dono misturados na conta da loja (retiradas desordenadas).",
         "5. Ordens de serviço perdidas em bloquinhos de papel rasurados.",
       ],
-      ctaText: "Assuma o controle total do estoque, finanças e WhatsApp da sua oficina com o TorxOS. 7 dias grátis no link da bio!",
+      ctaText: "Assuma o controle total do estoque, finanças e WhatsApp da sua assistência técnica com o TorxOS. 7 dias grátis no link da bio!",
     },
   ],
   ATENDIMENTO_CLIENTE: [
@@ -267,7 +267,7 @@ function generatePost(pillar, index = 1) {
     ],
     totalSlides,
     totalSlides,
-    "TRANSFORME SUA OFICINA",
+    "TRANSFORME SUA ASSISTÊNCIA",
     "👉 Teste 7 dias grátis no link da bio!",
     false,
     true
@@ -291,11 +291,11 @@ ${base.points.map((p) => `• ${p}`).join("\n")}
 💡 ${base.ctaText}
 
 💬 Qual é a maior dificuldade na sua bancada hoje? Comenta aqui embaixo!
-🚀 Compartilha com aquele amigo técnico que precisa organizar a oficina.
+🚀 Compartilha com aquele amigo técnico que precisa organizar a assistência técnica.
 
 .
 .
-#assistenciatecnica #consertodecelular #gestaodeoficina #tecnicoemcelular #microsoldagem #lojadegelular #torxos #torxosoficial`;
+#assistenciatecnica #consertodecelular #gestaodeassistencia #tecnicoemcelular #microsoldagem #lojadegelular #torxos #torxosoficial`;
 
   return {
     id: `post_${Date.now()}_${index}`,

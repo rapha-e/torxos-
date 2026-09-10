@@ -34,7 +34,7 @@ const adsDatabase: Record<string, any[]> = {
     {
       framework: "PAS (Problema - Agitação - Solução)",
       angle: "Peças que Somem & Falta de Telas",
-      hook: "🚨 Quantas telas e baterias já sumiram na sua oficina sem ninguém saber quem pegou?",
+      hook: "🚨 Quantas telas e baterias já sumiram na sua assistência sem ninguém saber quem pegou?",
       primaryText:
         "Se você tem assistência técnica, já passou pela vergonha de prometer o aparelho para as 18h e, na hora de fechar a carcaça, descobrir que a peça não estava na gaveta.\n\n" +
         "Além de passar vergonha com o cliente, você perdeu a venda e o lucro daquele dia.\n\n" +
@@ -64,11 +64,11 @@ const adsDatabase: Record<string, any[]> = {
     {
       framework: "DIRECT_RESPONSE",
       angle: "Bancada Cheia e Bolso Vazio",
-      hook: "💰 Bancada entupida de aparelhos, mas no fim do mês cadê o lucro da oficina?",
+      hook: "💰 Bancada entupida de aparelhos, mas no fim do mês cadê o lucro da assistência?",
       primaryText:
         "Se a sua assistência técnica não tem um DRE automático, você pode estar pagando para trabalhar sem perceber.\n\n" +
         "Custo da peça, imposto, garantia, comissão do técnico e conta de luz: se não colocar isso na ponta do lápis, o prejuízo é certo.\n\n" +
-        "O TorxOS é o único sistema que te mostra no centavo o lucro líquido de cada ordem de serviço e da oficina inteira.\n\n" +
+        "O TorxOS é o único sistema que te mostra no centavo o lucro líquido de cada ordem de serviço e da assistência inteira.\n\n" +
         "🎁 Crie sua conta grátis em 1 minuto sem cartão de crédito.",
       headline: "Controle Financeiro para Assistência • TorxOS Pro",
       cta: "Testar Grátis",
@@ -90,7 +90,7 @@ const googleSearchCampaign = {
     "Sistema para Assistência",
     "Programa Ordem de Serviço",
     "TorxOS • Teste 7 Dias Grátis",
-    "Software Oficina Celular",
+    "Software Assistência Celular",
     "Gestão Completa de Bancada",
   ],
   descriptions: [
@@ -101,7 +101,7 @@ const googleSearchCampaign = {
     '"sistema para assistencia tecnica"',
     "[software para assistencia tecnica de celulares]",
     '"programa ordem de servico celular"',
-    '"software gestao oficina celular gratis"',
+    '"software gestao assistencia tecnica celular"',
   ],
   finalUrl: "https://app.torxos.com.br/lp?utm_source=google&utm_medium=search",
 };

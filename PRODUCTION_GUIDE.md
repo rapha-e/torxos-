@@ -56,8 +56,12 @@ sudo chown -R $USER:$USER /opt/evorix
 cd /opt/evorix
 
 # 2. Configurar o arquivo de variáveis de ambiente de produção
-cp .env .env.production
+cp .env.production.example .env.production
 nano .env.production
+
+# 3. Executar deploy automatizado em 1 comando
+chmod +x scripts/deploy-vps.sh
+./scripts/deploy-vps.sh
 ```
 
 ### Configurações Mandatórias no `.env.production`:
@@ -82,50 +86,67 @@ JWT_EXPIRES_IN=1d
 JWT_REFRESH_SECRET=gere_outra_chave_jwt_refresh_com_openssl_rand_hex_32
 JWT_REFRESH_EXPIRES_IN=7d
 
+# Imagens Docker pré-compiladas (GitHub Packages / GHCR)
+DOCKER_IMAGE_API=ghcr.io/seu-usuario/torxos-api:latest
+DOCKER_IMAGE_WEB=ghcr.io/seu-usuario/torxos-web:latest
+
 # Evolution API (WhatsApp Gateway Oficial)
 EVOLUTION_API_KEY=gere_um_token_seguro_para_whatsapp
 
-# MinIO / S3 Storage (Laudos, fotos de avaria e assinaturas digitais)
-MINIO_ACCESS_KEY=admin_s3_evorix
-MINIO_SECRET_KEY=gere_senha_forte_minio_s3
-MINIO_BUCKET_NAME=evorix-media-prod
+# Armazenamento de Fotos e Laudos (MinIO Local Integrado)
+MINIO_ACCESS_KEY=admin_s3_torxos
+MINIO_SECRET_KEY=torxos_super_minio_s3_secret_2026
+MINIO_BUCKET_NAME=torxos-media
+S3_ENDPOINT=http://evorix_minio:9000
+S3_REGION=us-east-1
 ```
 
 ---
 
-## 4. Inicialização da Stack com Docker Compose
+## 4. Inicialização da Stack com Docker Compose de Produção
 
-Para subir a infraestrutura completa de contêineres:
+Em produção, o `docker-compose.prod.yml` já vem configurado com:
+1. **Zero build na VPS**: Puxa imagens pré-compiladas do GitHub Container Registry (GHCR), sem sobrecarregar a CPU.
+2. **MinIO Local Integrado**: Storage S3-compatible rodando na VPS com volume dedicado persistente (`evorix_miniodata`).
+3. **Limites de Memória**: Restrições estritas para proteger o kernel e evitar que memory leaks travem o servidor.
 
+| Contêiner | Função | Porta Interna / Web | Limite de RAM |
+| :--- | :--- | :--- | :--- |
+| `evorix_minio` | Armazenamento S3 de Fotos e Laudos | `9000` (API) / `9001` (Console Web) | **512 MB** |
+| `evorix_whatsapp` | Evolution API (WhatsApp) | `8080` | **1024 MB** |
+| `evorix_web` | Frontend Next.js Standalone | `3000` | **1024 MB** |
+| `evorix_api` | Backend NestJS + Fastify | `3001` | **1024 MB** |
+| `evorix_postgres` | Banco PostgreSQL 16 | `5432` | **1024 MB** |
+| `evorix_redis` | Cache & Filas BullMQ | `6379` | **256 MB** |
+| `evorix_nginx` | Gateway Edge HTTP/HTTPS | `80` / `443` | **128 MB** |
+
+### Executando com 1 Comando:
 ```bash
-# Build e inicialização em segundo plano (detached mode)
-docker compose --env-file .env.production up -d --build
+# Executa o script automatizado de pull e deploy:
+chmod +x scripts/deploy-vps.sh
+./scripts/deploy-vps.sh
+```
+
+Ou manualmente via Docker Compose:
+```bash
+# Baixar imagens do GHCR
+docker compose -f docker-compose.prod.yml --env-file .env.production pull
+
+# Subir contêineres em segundo plano
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --remove-orphans
 
 # Verificar status de saúde dos contêineres
-docker compose ps
+docker compose -f docker-compose.prod.yml ps
 ```
-
-Você verá os seguintes contêineres ativos:
-- `evorix_nginx`: Porta 80 / 443 (Gateway de entrada)
-- `evorix_web`: Porta 3000 interna (Frontend Next.js Luxury)
-- `evorix_api`: Porta 3001 interna (Backend NestJS + Fastify)
-- `evorix_postgres`: Porta 5432 interna (PostgreSQL 16)
-- `evorix_redis`: Porta 6379 interna (Redis 7 + BullMQ)
-- `evorix_minio`: Portas 9000/9001 (S3 Storage)
-- `evorix_whatsapp`: Porta 8080 (Evolution API)
 
 ---
 
-## 5. Aplicação das Migrações e Carga Inicial do PostgreSQL
+## 5. Aplicação das Migrações do PostgreSQL
 
-Após a inicialização do banco, execute as migrações Prisma de produção no contêiner da API:
+Após a inicialização do banco, as migrações Prisma são aplicadas automaticamente pelo script de deploy, ou manualmente:
 
 ```bash
-# 1. Executar migrações do PostgreSQL
-docker compose exec evorix_api npx prisma migrate deploy --schema=./prisma/schema.postgresql.prisma
-
-# 2. (Opcional) Executar carga inicial (Seed de Tenant, Categorias, Usuário Master e OS Demo)
-docker compose exec evorix_api npm run prisma:seed
+docker compose -f docker-compose.prod.yml exec evorix_api npx prisma migrate deploy --schema=./prisma/schema.postgresql.prisma
 ```
 
 ---
@@ -199,25 +220,32 @@ sudo chmod +x /usr/local/bin/evorix-backup.sh
 
 ## 8. Comandos de Manutenção e Atualização
 
-### Atualizar o Software para uma Nova Versão
+### Atualizar o Software para uma Nova Versão (Zero-Downtime / Rápido)
+Como o GitHub Actions gera as imagens no GHCR, a atualização na VPS não compila nada:
 ```bash
 cd /opt/evorix
 git pull origin main
-docker compose build --no-cache evorix_api evorix_web
-docker compose up -d
-docker compose exec evorix_api npx prisma migrate deploy --schema=./prisma/schema.postgresql.prisma
+
+# Puxa as novas imagens pré-compiladas
+docker compose -f docker-compose.prod.yml --env-file .env.production pull
+
+# Reinicia os contêineres com a nova versão
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --remove-orphans
+
+# Executa migrações pendentes do banco
+docker compose -f docker-compose.prod.yml exec evorix_api npx prisma migrate deploy --schema=./prisma/schema.postgresql.prisma
 ```
 
 ### Visualizar Logs em Tempo Real
 ```bash
 # Logs de todos os contêineres
-docker compose logs -f
+docker compose -f docker-compose.prod.yml logs -f
 
 # Logs apenas da API NestJS
-docker compose logs -f evorix_api
+docker compose -f docker-compose.prod.yml logs -f evorix_api
 
 # Logs do Frontend Next.js
-docker compose logs -f evorix_web
+docker compose -f docker-compose.prod.yml logs -f evorix_web
 ```
 
 ---

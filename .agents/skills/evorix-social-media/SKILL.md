@@ -11,7 +11,7 @@ Esta skill orienta o agente Antigravity a produzir conteúdos orgânicos e educa
 
 ## 🎯 Objetivos da Skill
 
-1. **Posicionamento de Autoridade:** Gerar carrosséis com dicas reais de bancada, gestão financeira de oficina e atendimento via WhatsApp.
+1. **Posicionamento de Autoridade:** Gerar carrosséis com dicas reais de bancada, gestão financeira de assistência técnica e atendimento via WhatsApp.
 2. **Atração para o Funil de Vendas:** Cada post termina com um CTA claro direcionando para o teste grátis de 7 dias na Landing Page (`https://evorix.com.br/lp`).
 3. **Automação Contínua:** Agendar tarefas recorrentes no Antigravity via `/schedule` para abastecer as redes toda semana sem intervenção manual.
 
@@ -29,7 +29,7 @@ node scripts/social/generate-posts.js --week
 # Gerar carrossel específico de bancada técnica:
 node scripts/social/generate-posts.js --pillar=BANCADA_TECNICA
 
-# Gerar carrossel de finanças e precificação de oficina:
+# Gerar carrossel de finanças e precificação de assistência técnica:
 node scripts/social/generate-posts.js --pillar=GESTAO_OFICINA
 ```
 

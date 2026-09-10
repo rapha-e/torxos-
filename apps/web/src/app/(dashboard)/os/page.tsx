@@ -90,7 +90,7 @@ export default function ServiceOrdersListPage() {
       <PrintHeader
         title="Relatório Geral de Ordens de Serviço"
         subtitle={`Total de ${orders.length} ordens listadas • Faturamento: ${formatCurrency(totalAmount)}`}
-        documentType="Oficina Técnica"
+        documentType="Assistência Técnica"
       />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print print:hidden">

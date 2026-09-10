@@ -2,7 +2,7 @@
 
 **Versão:** 1.0.0  
 **Classificação:** Arquitetura Técnica & Especificação de Engenharia  
-**Plataforma:** SaaS B2B Multi-Tenant para Assistências Técnicas e Oficinas Especializadas
+**Plataforma:** SaaS B2B Multi-Tenant para Assistências Técnicas de Celulares e Eletrônicos
 
 ---
 
@@ -59,7 +59,8 @@ TorxOS/
 │           │   ├── financeiro/   # Títulos, DRE & Fluxo de Caixa
 │           │   └── mentor/       # Centro dos 5 Pilares & Chat IA
 │           └── (public)/status/  # Portal Público para o Cliente
-├── docker-compose.yml            # Infraestrutura oficial do Blueprint
+├── docker-compose.yml            # Infraestrutura de desenvolvimento local (com MinIO)
+├── docker-compose.prod.yml       # Infraestrutura de produção (Cloudflare R2, GHCR e limites de RAM)
 ├── package.json                  # Workspaces do monorepo
 └── .env                          # Variáveis de ambiente & Chaves de API
 ```

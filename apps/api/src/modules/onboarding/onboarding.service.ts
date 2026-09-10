@@ -86,7 +86,7 @@ Uma das funções mais elogiadas pelos técnicos e donos de assistência no Torx
 
 Quando você altera o status da OS para *"Aguardando Peça"* ou *"Pronto para Retirada"*, o cliente recebe um link exclusivo e vê tudo pelo navegador sem precisar te ligar ou mandar mensagem a cada hora!
 
-Isso economiza até 2 horas por dia de interrupções na sua oficina.
+Isso economiza até 2 horas por dia de interrupções na sua assistência técnica.
 
 ✨ Teste agora na {empresa}: {linkAcesso}/os/kanban
 

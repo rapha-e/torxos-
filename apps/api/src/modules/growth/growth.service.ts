@@ -33,7 +33,7 @@ export class GrowthService {
         {
           id: "ESTOQUE",
           title: "Peças que Somem e Ruptura de Almoxarifado",
-          hook: "Quantas telas e baterias já sumiram na sua oficina sem ninguém saber onde foram parar?",
+          hook: "Quantas telas e baterias já sumiram na sua assistência sem ninguém saber onde foram parar?",
           coreSolution: "Baixa automática na OS, cálculo de custo real da peça e alerta de reposição antes de esgotar.",
         },
         {
@@ -132,7 +132,7 @@ export class GrowthService {
           "O TorxOS organiza sua recepção, sua bancada e o seu caixa.\n\n" +
           "🚀 Teste 100% grátis por 7 dias. Não pedimos cartão de crédito!",
         headline: "Ordens de Serviço no WhatsApp com QR Code • Teste 7 Dias",
-        description: "Transforme sua oficina numa empresa profissional e organizada.",
+        description: "Transforme sua assistência numa empresa profissional e organizada.",
         callToAction: "Começar Teste Grátis",
         destinationUrl: "https://app.torxos.com.br/lp?utm_source=meta&utm_medium=feed&utm_campaign=whatsapp_os",
       },
@@ -147,7 +147,7 @@ export class GrowthService {
           "Muitos técnicos cobram no 'achômetro' por medo de perder o cliente para o concorrente da esquina.\n\n" +
           "O resultado? Você trabalha 12 horas por dia na bancada, inalando fumaça de solda, e o lucro não aparece.\n\n" +
           "Com o TorxOS e o nosso exclusivo AI Mentor de Bancada, o sistema calcula sua margem real considerando o custo da peça, imposto e comissão do técnico.\n\n" +
-          "Chega de tomar prejuízo. Assuma o controle da sua oficina hoje mesmo.\n\n" +
+          "Chega de tomar prejuízo. Assuma o controle da sua assistência técnica hoje mesmo.\n\n" +
           "🎁 Libere seu acesso de 7 dias grátis em menos de 60 segundos.",
         headline: "Pare de Cobrar Barato • Sistema de Gestão para Assistência",
         description: "Controle financeiro, DRE e Mentor de IA na sua bancada.",
@@ -197,7 +197,7 @@ export class GrowthService {
         "Sistema para Assistência",
         "Programa Ordem de Serviço",
         "TorxOS • Teste 7 Dias Grátis",
-        "Software Oficina Celular",
+        "Software Assistência Celular",
         "Gestão Completa de Bancada",
       ],
       descriptions: [

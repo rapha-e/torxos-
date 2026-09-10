@@ -18,6 +18,20 @@ export class TenantService {
   ) {}
 
   async getSettings(tenantId: string) {
+    if (!tenantId) {
+      return {
+        tradeName: "TorxOS Master Platform",
+        legalName: "TorxOS Global Management",
+        plan: "ENTERPRISE",
+        isActive: true,
+        settings: {
+          currency: "BRL",
+          subscription_status: "ACTIVE",
+          plan: "ENTERPRISE",
+        },
+      };
+    }
+
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
     });

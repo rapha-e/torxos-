@@ -43,6 +43,7 @@ function LoginForm() {
       if (data?.accessToken && data?.user) {
         setAuthToken(data.accessToken);
         if (typeof window !== "undefined") {
+          localStorage.setItem("torxos_user", JSON.stringify(data.user));
           localStorage.setItem("evorix_user", JSON.stringify(data.user));
           if (data.user.tenantName) {
             localStorage.setItem(

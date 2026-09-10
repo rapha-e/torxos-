@@ -1429,7 +1429,7 @@ Panorama de liquidez consolidado da sua operação:
 
 ---
 
-### ⚡ Capital Parado na Oficina
+### ⚡ Capital Parado na Assistência Técnica
 1. **OSs Prontas para Retirada:** Existem R$ 350,00 na OS #1035 (PS5 do Tiago Rocha) e R$ 580,00 na OS #1038 (iPad Air da Beatriz) quase concluída. São **R$ 930,00 de injeção direta de caixa** pronta para recebimento hoje.
 2. **Orçamentos Aprovados:** A OS #1041 (R$ 210,00) e OS #1048 (R$ 350,00) representam **R$ 560,00** aguardando finalização técnica.
 

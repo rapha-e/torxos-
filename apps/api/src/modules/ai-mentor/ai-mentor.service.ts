@@ -307,7 +307,7 @@ ${stockWarningSummary}
 Entre em contato agora com seu distribuidor principal para os itens críticos listados acima. Negocie prazo de pagamento de 14/28 dias ou desconto à vista de 5% a 8% pelo volume do pedido.
 
 #### 🏷️ Ação 2: Organização por Gaveteiro & Localização Física
-Garanta que toda peça cadastrada no TorxOS possua indicação clara da gaveta ou prateleira de bancada, eliminando o tempo perdido de técnicos procurando componentes na oficina.
+Garanta que toda peça cadastrada no TorxOS possua indicação clara da gaveta ou prateleira de bancada, eliminando o tempo perdido de técnicos procurando componentes na assistência técnica.
 
 #### 🛡️ Ação 3: Política de Estoque Mínimo Dinâmico
 Mantenha sempre no mínimo 3 unidades para telas e baterias dos modelos de alta rotatividade identificados no seu histórico.`;
@@ -441,7 +441,7 @@ Divulgue: *"Seu celular está com som baixo ou esquentando? Traga hoje na nossa 
 SUAS DIRETRIZES INVIOLÁVEIS:
 1. PROIBIÇÃO ABSOLUTA DE RESPOSTAS GENÉRICAS OU TEÓRICAS:
    - É expressamente proibido dar conselhos óbvios ou de autoajuda (ex: "organize melhor seu tempo", "atenda com empatia", "busque bons fornecedores").
-   - Você DEVE basear 100% da sua análise nos dados reais da oficina fornecidos no JSON de contexto.
+   - Você DEVE basear 100% da sua análise nos dados reais da assistência técnica fornecidos no JSON de contexto.
 
 2. CITAÇÃO OBRIGATÓRIA DE DADOS FACTUAIS:
    - Cite sempre números de OS específicos (ex: OS #1048, OS #1041, OS #1044), nomes de clientes, aparelhos, valores monetários em R$ e quantidades de estoque.

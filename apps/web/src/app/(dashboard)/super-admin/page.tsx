@@ -158,7 +158,7 @@ export default function SuperAdminDashboardPage() {
 
   // Estado para Central de Redes Sociais & Carrosséis (Etapa 4)
   const [socialModalOpen, setSocialModalOpen] = useState(false);
-  const [socialPillar, setSocialPillar] = useState<string>("GESTAO_OFICINA");
+  const [socialPillar, setSocialPillar] = useState<string>("GESTAO_ASSISTENCIA");
   const [socialCustomTopic, setSocialCustomTopic] = useState("");
   const [socialTotalSlides, setSocialTotalSlides] = useState<number>(6);
   const [socialLoading, setSocialLoading] = useState(false);
@@ -755,7 +755,7 @@ export default function SuperAdminDashboardPage() {
           onClick={() => router.push("/")}
           className="mt-6 px-4 py-2 bg-[#181816] hover:bg-[#2b2a27] text-white text-xs font-semibold rounded-xl transition shadow-sm cursor-pointer"
         >
-          Voltar ao Painel da Oficina
+          Voltar ao Painel da Assistência Técnica
         </button>
       </div>
     );
@@ -1954,7 +1954,7 @@ export default function SuperAdminDashboardPage() {
             <div className="p-5 bg-[#FAF9F6] border-b border-[#EBEBE8] flex flex-wrap items-end gap-3">
               <div className="flex-1 min-w-[200px] space-y-1">
                 <label className="text-[11px] font-bold text-[#787774] uppercase tracking-wider block">
-                  Dor Principal da Oficina
+                  Dor Principal da Assistência Técnica
                 </label>
                 <select
                   value={growthFocus}
@@ -2391,7 +2391,7 @@ export default function SuperAdminDashboardPage() {
                   onChange={(e) => setSocialPillar(e.target.value)}
                   className="w-full text-xs font-semibold px-3 py-2 rounded-xl bg-white border border-[#E5E5E0] text-[#181816] focus:outline-none focus:border-purple-500"
                 >
-                  <option value="GESTAO_OFICINA">💼 Gestão & Lucro (Precificação e Custos)</option>
+                  <option value="GESTAO_ASSISTENCIA">💼 Gestão & Lucro (Assistência e Bancada)</option>
                   <option value="BANCADA_TECNICA">🛠️ Bancada & Técnica (Solda, Placas e Defeitos)</option>
                   <option value="ATENDIMENTO_CLIENTE">💬 Atendimento & WhatsApp (Fidelização e Status)</option>
                   <option value="PRODUTIVIDADE_SISTEMA">⚡ Organização & Sistema (Fim do Papel)</option>

@@ -59,7 +59,7 @@ export class SocialService {
         ctaText: "Anote o laudo técnico completo e histórico de peças de cada cliente no TorxOS. Teste 7 dias grátis!",
       },
     ],
-    [SocialPillar.GESTAO_OFICINA]: [
+    [SocialPillar.GESTAO_ASSISTENCIA]: [
       {
         title: "A Matemática da Troca de Tela: Quanto Realmente Sobra?",
         subtitle: "Cobrar R$ 250 numa tela que custou R$ 130 não significa que você lucrou R$ 120.",
@@ -74,7 +74,7 @@ export class SocialService {
       },
       {
         title: "5 Sinais de que Sua Assistência Técnica Está Sangrando Dinheiro",
-        subtitle: "Você trabalha até 20h da noite, a oficina tá cheia de celular, mas no fim do mês falta dinheiro?",
+        subtitle: "Você trabalha até 20h da noite, a assistência tá cheia de aparelhos, mas no fim do mês falta dinheiro?",
         points: [
           "1. Ninguém sabe onde foi parar a tela do Moto G22 comprada semana passada.",
           "2. Cliente volta reclamando de bateria e você não sabe se a peça tinha garantia ou não.",
@@ -82,7 +82,7 @@ export class SocialService {
           "4. Gastos pessoais do dono misturados na conta da loja (retiradas desordenadas).",
           "5. Ordens de serviço perdidas em bloquinhos de papel rasurados.",
         ],
-        ctaText: "Assuma o controle total do estoque, finanças e WhatsApp da sua oficina com o TorxOS. 7 dias grátis no link da bio!",
+        ctaText: "Assuma o controle total do estoque, finanças e WhatsApp da sua assistência técnica com o TorxOS. 7 dias grátis no link da bio!",
       },
     ],
     [SocialPillar.ATENDIMENTO_CLIENTE]: [
@@ -135,8 +135,8 @@ export class SocialService {
           description: "Dicas de microsoldagem, circuitos, defeitos comuns e ferramentas.",
         },
         {
-          id: SocialPillar.GESTAO_OFICINA,
-          label: "💼 Gestão & Lucro",
+          id: SocialPillar.GESTAO_ASSISTENCIA,
+          label: "Gestão & Lucro Real",
           description: "Precificação, margem líquida, corte de custos e controle financeiro.",
         },
         {
@@ -161,7 +161,7 @@ export class SocialService {
         "#trocadetela",
         "#tecnicoemcelular",
         "#microsoldagem",
-        "#gestaodeoficina",
+        "#gestaodeassistencia",
         "#lojadegelular",
         "#reparodeplaca",
         "#bancadatecnica",
@@ -175,11 +175,11 @@ export class SocialService {
    * Gera um carrossel educativo para Instagram com slides formatados e SVG renderizável
    */
   async generateCarousel(dto: GenerateCarouselDto): Promise<GeneratedSocialPost> {
-    const pillar = dto.pillar || SocialPillar.GESTAO_OFICINA;
+    const pillar = dto.pillar || SocialPillar.GESTAO_ASSISTENCIA;
     const totalSlides = dto.totalSlides || 6;
 
     // Seleciona ou formula o tema
-    const availableTopics = this.topicsDatabase[pillar] || this.topicsDatabase[SocialPillar.GESTAO_OFICINA];
+    const availableTopics = this.topicsDatabase[pillar] || this.topicsDatabase[SocialPillar.GESTAO_ASSISTENCIA];
     const baseTopic = availableTopics[Math.floor(Math.random() * availableTopics.length)];
 
     const title = dto.customTopic || baseTopic.title;
@@ -232,7 +232,7 @@ export class SocialService {
       type: "CTA",
       badge: "TRANSFORME SUA ASSISTÊNCIA",
       title: "Gostou desse conteúdo?",
-      subtitle: "Pare de perder tempo com papel e planilhas confusas. Tenha controle total da sua oficina em um só lugar.",
+      subtitle: "Pare de perder tempo com papel e planilhas confusas. Tenha controle total da sua assistência técnica em um só lugar.",
       bullets: [
         "✅ Ordens de serviço digitais com fotos",
         "✅ Notificação automática de status no WhatsApp",
@@ -266,7 +266,7 @@ export class SocialService {
   async generateWeeklyPack(dto: GenerateWeeklyPackDto) {
     const days = [
       { day: "Segunda-feira (08:30)", pillar: SocialPillar.BANCADA_TECNICA },
-      { day: "Quarta-feira (12:30)", pillar: SocialPillar.GESTAO_OFICINA },
+      { day: "Quarta-feira (12:30)", pillar: SocialPillar.GESTAO_ASSISTENCIA },
       { day: "Sexta-feira (18:00)", pillar: SocialPillar.ATENDIMENTO_CLIENTE },
     ];
 
@@ -465,12 +465,12 @@ export class SocialService {
     switch (pillar) {
       case SocialPillar.BANCADA_TECNICA:
         return "Bancada & Técnica";
-      case SocialPillar.GESTAO_OFICINA:
+      case SocialPillar.GESTAO_ASSISTENCIA:
         return "Gestão & Lucro";
       case SocialPillar.ATENDIMENTO_CLIENTE:
         return "Atendimento & WhatsApp";
       case SocialPillar.PRODUTIVIDADE_SISTEMA:
-        return "Organização de Oficina";
+        return "Organização da Assistência";
       default:
         return "Dica TorxOS";
     }
@@ -498,7 +498,7 @@ ${points.map((p) => `• ${p}`).join("\n")}
 
 Gostou da dica?
 💬 Deixa nos comentários qual é a sua maior dificuldade na bancada hoje!
-🚀 Compartilha com aquele amigo técnico que precisa organizar a oficina.
+🚀 Compartilha com aquele amigo técnico que precisa organizar a assistência técnica.
 
 .
 .
@@ -510,7 +510,7 @@ ${hashtags}`.trim();
       "#assistenciatecnica",
       "#consertodecelular",
       "#tecnicoemcelular",
-      "#gestaodeoficina",
+      "#gestaodeassistencia",
       "#torxos",
       "#lojadegelular",
     ];
@@ -518,12 +518,12 @@ ${hashtags}`.trim();
     switch (pillar) {
       case SocialPillar.BANCADA_TECNICA:
         return [...base, "#microsoldagem", "#reparodeplaca", "#trocadetela", "#ferramentasbancada"];
-      case SocialPillar.GESTAO_OFICINA:
+      case SocialPillar.GESTAO_ASSISTENCIA:
         return [...base, "#lucratividade", "#precificacao", "#controledeestoque", "#empreendedorismo"];
       case SocialPillar.ATENDIMENTO_CLIENTE:
         return [...base, "#fidelizacaodeclientes", "#atendimentonowhatsapp", "#ordemdeservico"];
       default:
-        return [...base, "#produtividade", "#organizacaodeoficina", "#softwaredegestao"];
+        return [...base, "#produtividade", "#organizacaodeassistencia", "#softwaredegestao"];
     }
   }
 }

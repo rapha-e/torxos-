@@ -13,7 +13,9 @@ import {
   Check,
   Smartphone,
   FolderOpen,
+  Loader2,
 } from "lucide-react";
+import { compressAndConvertToDataUrl } from "@/lib/image-upload";
 
 export interface DevicePhoto {
   id: string;
@@ -120,6 +122,8 @@ export function PhotoChecklist({
   };
 
   // Captura o frame atual do vídeo em Canvas e converte para imagem
+  const [isCompressing, setIsCompressing] = useState(false);
+
   const captureFrameFromLiveCamera = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
@@ -130,7 +134,8 @@ export function PhotoChecklist({
     if (!ctx) return;
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    // Converte frame da câmera para WebP direto no canvas
+    const dataUrl = canvas.toDataURL("image/webp", 0.82);
 
     addPhotoToState(dataUrl);
     stopLiveCamera();
@@ -146,19 +151,36 @@ export function PhotoChecklist({
     onChange([...photos, newPhoto]);
   };
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
+    setChoiceModalOpen(false);
+    setIsCompressing(true);
+
+    try {
+      // Comprime no navegador via browser-image-compression e converte para WebP
+      const { dataUrl } = await compressAndConvertToDataUrl(file, {
+        maxWidthOrHeight: 1920,
+        maxSizeMB: 0.6,
+        fileType: "image/webp",
+        initialQuality: 0.8,
+      });
       addPhotoToState(dataUrl);
+    } catch (err) {
+      console.error("Erro ao comprimir imagem:", err);
+      // Fallback para leitura direta caso ocorra qualquer problema
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fallbackUrl = event.target?.result as string;
+        addPhotoToState(fallbackUrl);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsCompressing(false);
       if (galleryInputRef.current) galleryInputRef.current.value = "";
       if (cameraInputRef.current) cameraInputRef.current.value = "";
-    };
-    reader.readAsDataURL(file);
-    setChoiceModalOpen(false);
+    }
   };
 
   const removePhoto = (id: string) => {
@@ -212,6 +234,13 @@ export function PhotoChecklist({
           </div>
         )}
       </div>
+
+      {isCompressing && (
+        <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-xs text-amber-800 animate-pulse">
+          <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+          <span>Comprimindo e convertendo foto para WebP no navegador...</span>
+        </div>
+      )}
 
       {/* Inputs Ocultos de Sistema */}
       {/* 1. Galeria / Arquivos do Dispositivo */}

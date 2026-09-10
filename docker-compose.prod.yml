@@ -1,8 +1,17 @@
 version: '3.8'
 
+# ==============================================================================
+# TorxOS / Evorix — Docker Compose de PRODUÇÃO Otimizado (VPS / Cloud Dedicada)
+# ==============================================================================
+# Otimizações de Produção:
+# 1. Sem MinIO: Fotos e mídias usam Cloudflare R2 (API S3 compatível, 0 egress fee)
+# 2. Imagens Pré-compiladas do GHCR: Evita consumo de CPU/RAM na VPS para build
+# 3. Limites Estritos de Memória: Protege a VPS contra estouro de RAM (OOM Killer)
+# ==============================================================================
+
 services:
   # ---------------------------------------------------------------------------
-  # Banco de Dados Relacional Principal (PostgreSQL 16 Multi-Tenant)
+  # 1. Banco de Dados Relacional Principal (PostgreSQL 16 Multi-Tenant)
   # ---------------------------------------------------------------------------
   evorix_postgres:
     image: postgres:16-alpine
@@ -13,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-evorix_secure_password}
       POSTGRES_DB: ${POSTGRES_DB:-evorix_db}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - evorix_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -27,14 +36,14 @@ services:
           memory: 1024M
 
   # ---------------------------------------------------------------------------
-  # Fila de Mensagens & Cache de Sessão (Redis 7 + BullMQ)
+  # 2. Fila de Mensagens & Cache de Sessão (Redis 7 + BullMQ)
   # ---------------------------------------------------------------------------
   evorix_redis:
     image: redis:7-alpine
     container_name: evorix_redis
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - evorix_redisdata:/data
     healthcheck:
@@ -48,7 +57,7 @@ services:
           memory: 256M
 
   # ---------------------------------------------------------------------------
-  # Armazenamento de Objetos S3-Compatible (Fotos de Check-in, Laudos e Mídias)
+  # 3. Armazenamento de Objetos S3-Compatible Local (MinIO)
   # ---------------------------------------------------------------------------
   evorix_minio:
     image: minio/minio:latest
@@ -56,11 +65,11 @@ services:
     restart: always
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minio_admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minio_secret_password}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-admin_s3_torxos}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-torxos_super_minio_s3_secret_2026}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - evorix_miniodata:/data
     deploy:
@@ -69,7 +78,7 @@ services:
           memory: 512M
 
   # ---------------------------------------------------------------------------
-  # Gateway WhatsApp (Evolution API v1.8.2)
+  # 4. Gateway WhatsApp (Evolution API v1.8.2)
   # ---------------------------------------------------------------------------
   evorix_whatsapp:
     image: atendai/evolution-api:v1.8.2
@@ -79,69 +88,72 @@ services:
       - SERVER_PORT=8080
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-evorix_global_wpp_secret}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     deploy:
       resources:
         limits:
           memory: 1024M
 
   # ---------------------------------------------------------------------------
-  # Backend NestJS 10 (Fastify + Prisma Engine PostgreSQL + Gemini 2.5 Flash)
+  # 4. Backend NestJS 10 (Fastify + Prisma Engine + Cloudflare R2 + Gemini)
   # ---------------------------------------------------------------------------
   evorix_api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    image: ${DOCKER_IMAGE_API:-ghcr.io/seu-usuario/torxos-api:latest}
     container_name: evorix_api
     restart: always
     environment:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: "postgresql://${POSTGRES_USER:-evorix_user}:${POSTGRES_PASSWORD:-evorix_secure_password}@evorix_postgres:5432/${POSTGRES_DB:-evorix_db}?schema=public"
-      JWT_SECRET: ${JWT_SECRET:-evorix_super_secret_jwt_key_2026_production_ready}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-evorix_super_refresh_jwt_key_2026_production_ready}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       REDIS_HOST: evorix_redis
       REDIS_PORT: 6379
       EVOLUTION_API_URL: http://evorix_whatsapp:8080
-      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-evorix_global_wpp_secret}
-      MINIO_ENDPOINT: evorix_minio
-      MINIO_PORT: 9000
-      MINIO_USE_SSL: "false"
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio_admin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minio_secret_password}
-      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-evorix-media}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-sua_chave_gemini_aqui}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # Armazenamento S3 (MinIO Local nativo ou Cloudflare R2 / AWS S3)
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-evorix_minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-admin_s3_torxos}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-torxos_super_minio_s3_secret_2026}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-torxos-media}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://evorix_minio:9000}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-admin_s3_torxos}
+      S3_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-torxos_super_minio_s3_secret_2026}
+      S3_BUCKET_NAME: ${MINIO_BUCKET_NAME:-torxos-media}
+      S3_PUBLIC_DOMAIN: ${S3_PUBLIC_DOMAIN:-}
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     depends_on:
       evorix_postgres:
         condition: service_healthy
       evorix_redis:
         condition: service_healthy
+      evorix_minio:
+        condition: service_started
     deploy:
       resources:
         limits:
           memory: 1024M
 
   # ---------------------------------------------------------------------------
-  # Frontend Next.js 14 Standalone (Luxury Off-White Design System)
+  # 5. Frontend Next.js 14 Standalone (Luxury Off-White Design System)
   # ---------------------------------------------------------------------------
   evorix_web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: /api/v1
+    image: ${DOCKER_IMAGE_WEB:-ghcr.io/seu-usuario/torxos-web:latest}
     container_name: evorix_web
     restart: always
     environment:
       NODE_ENV: production
       PORT: 3000
-      NEXT_PUBLIC_API_URL: /api/v1
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - evorix_api
     deploy:
@@ -150,7 +162,7 @@ services:
           memory: 1024M
 
   # ---------------------------------------------------------------------------
-  # Reverse Proxy & Edge Gateway Nginx (Unifica porta 80/443 e roteia /api)
+  # 6. Reverse Proxy & Edge Gateway Nginx (Unifica porta 80/443 e roteia /api)
   # ---------------------------------------------------------------------------
   evorix_nginx:
     image: nginx:alpine
@@ -161,7 +173,7 @@ services:
       - "443:443"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      # Descomente para SSL com Let's Encrypt / Certbot:
+      # Descomente para mapear certificados SSL Let's Encrypt da VPS:
       # - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - evorix_web

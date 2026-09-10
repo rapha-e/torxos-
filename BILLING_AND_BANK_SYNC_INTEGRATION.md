@@ -10,7 +10,7 @@ O EVORIX opera em uma arquitetura SaaS Multi-Tenant blindada, onde:
 1. **Lojistas / Assistências Técnicas (`tenantId` específico):**
    - Possuem seu próprio módulo financeiro, suas próprias contas bancárias e recebem pagamentos de seus **clientes finais** (vendas de balcão e ordens de serviço).
 2. **Dono da Plataforma (`SUPER_ADMIN` com `tenantId: null`):**
-   - Possui acesso global irrestrito e não se mistura com a base de dados de nenhuma oficina.
+   - Possui acesso global irrestrito e não se mistura com a base de dados de nenhuma assistência técnica.
    - É o recebedor exclusivo das **mensalidades/faturas SaaS** de todas as lojas cadastradas na plataforma.
    - A sincronização bancária do Super Admin conecta-se diretamente à **sua conta bancária PJ (Master)**.
 
@@ -29,8 +29,8 @@ O motor de cobrança calcula e controla o ciclo de vida das assinaturas:
 ```
 
 ### 2.1 Regra Rigorosa de Baixa (+30 Dias Baseado no Vencimento)
-- **Pagamento Antecipado no Trial:** Se o período de teste termina em 12/09 e a oficina paga em 05/09, o novo vencimento é estendido para **12/10** (+30 dias após o vencimento do trial). O lojista **não perde** os dias restantes de teste.
-- **Pagamento Antecipado de Empresa Ativa:** Se a fatura vence em 20/09 e a oficina paga em 10/09, o novo vencimento vai para **20/10** (+30 dias após o vencimento atual).
+- **Pagamento Antecipado no Trial:** Se o período de teste termina em 12/09 e a assistência paga em 05/09, o novo vencimento é estendido para **12/10** (+30 dias após o vencimento do trial). O lojista **não perde** os dias restantes de teste.
+- **Pagamento Antecipado de Empresa Ativa:** Se a fatura vence em 20/09 e a assistência paga em 10/09, o novo vencimento vai para **20/10** (+30 dias após o vencimento atual).
 - **Pagamento durante o Prazo de Tolerância:** Se a fatura venceu em 01/09 e o lojista paga em 05/09 (dentro da tolerância), o novo vencimento vai para **01/10** (+30 dias após a data de corte da fatura).
 - **Salvaguarda de Reativação:** Empresas suspensas há mais de 30 dias têm seu vencimento reiniciado para **Data Atual + 30 dias** ao reativar.
 
@@ -72,7 +72,7 @@ O fluxo de sincronização bancária opera em tempo real:
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Lojista as Lojista (Oficina)
+    actor Lojista as Lojista (Assistência Técnica)
     participant App as EVORIX (Fatura)
     participant Banco as Seu Banco PJ (Inter/Asaas/EFI)
     participant Webhook as EVORIX API (Super Admin)

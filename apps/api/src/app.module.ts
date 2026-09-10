@@ -14,6 +14,7 @@ import { AsaasModule } from "./modules/asaas/asaas.module";
 import { GrowthModule } from "./modules/growth/growth.module";
 import { SocialModule } from "./modules/social/social.module";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module";
+import { MediaModule } from "./modules/media/media.module";
 import { JwtAuthGuard } from "./modules/auth/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 
@@ -36,6 +37,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
     GrowthModule,
     SocialModule,
     OnboardingModule,
+    MediaModule,
   ],
   providers: [
     {
