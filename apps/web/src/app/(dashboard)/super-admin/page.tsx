@@ -165,7 +165,7 @@ export default function SuperAdminDashboardPage() {
   const [socialPostResult, setSocialPostResult] = useState<any>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [copiedSocialCaption, setCopiedSocialCaption] = useState(false);
-  const [socialWebhookUrl, setSocialWebhookUrl] = useState("https://n8n.webhook/instagram-torxos");
+  const [socialWebhookUrl, setSocialWebhookUrl] = useState("https://hook.eu1.make.com/pwx3stjiesby9cx5sivywni9tej1gfri");
   const [socialDispatching, setSocialDispatching] = useState(false);
   const [socialDispatchSuccess, setSocialDispatchSuccess] = useState("");
 
