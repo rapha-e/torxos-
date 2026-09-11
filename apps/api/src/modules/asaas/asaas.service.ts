@@ -29,7 +29,10 @@ export class AsaasService {
     @Inject(forwardRef(() => TenantService))
     private tenantService: TenantService,
   ) {
-    this.apiUrl = this.configService.get<string>("ASAAS_API_URL") || "https://sandbox.asaas.com/api/v3";
+    let rawUrl = this.configService.get<string>("ASAAS_API_URL") || "https://api.asaas.com/v3";
+    // Normaliza URLs incorretas como /api/v3 para o endpoint oficial v3
+    rawUrl = rawUrl.replace("/api/v3", "/v3").replace(/\/+$/, "");
+    this.apiUrl = rawUrl;
     this.apiKey = this.configService.get<string>("ASAAS_API_KEY") || "";
     this.webhookToken = this.configService.get<string>("ASAAS_WEBHOOK_TOKEN") || "torxos_webhook_secret_2026";
   }
@@ -42,6 +45,7 @@ export class AsaasService {
     const url = `${this.apiUrl}${path}`;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      "User-Agent": "TorxOS-SaaS/1.0",
       access_token: this.apiKey,
       ...(options.headers as Record<string, string> || {}),
     };
