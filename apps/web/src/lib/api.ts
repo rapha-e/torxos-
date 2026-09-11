@@ -259,7 +259,25 @@ function getLocalStockList() {
     },
   ];
 
-  if (typeof window === "undefined") return defaultItems;
+  if (typeof window === "undefined") return [];
+
+  if (getAuthToken()) {
+    const saved = localStorage.getItem("evorix_stock_products");
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        if (parsed.some((p: any) => p.id === "prod-001" && p.sku === "TEL-IP13PM-ORIG")) {
+          localStorage.removeItem("evorix_stock_products");
+          return [];
+        }
+        return parsed;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
 
   const saved = localStorage.getItem("evorix_stock_products");
   if (!saved) {
@@ -308,7 +326,25 @@ export function getLocalSalesList() {
     },
   ];
 
-  if (typeof window === "undefined") return defaultSales;
+  if (typeof window === "undefined") return [];
+
+  if (getAuthToken()) {
+    const saved = localStorage.getItem("evorix_sales");
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        if (parsed.some((s: any) => s.id === "sale-1001")) {
+          localStorage.removeItem("evorix_sales");
+          return [];
+        }
+        return parsed;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
 
   const saved = localStorage.getItem("evorix_sales");
   if (!saved) {
@@ -333,7 +369,25 @@ export function getLocalFinancialTransactions() {
     { id: "4", description: "Recebimento Balcão OS #1030 - MacBook Pro", transactionType: "RECEIVABLE", netAmount: 1450.0, dueDate: "2026-09-04", status: "SETTLED", paymentMethod: "CREDIT_CARD", client: { name: "Amanda Prado" } },
   ];
 
-  if (typeof window === "undefined") return defaultTransactions;
+  if (typeof window === "undefined") return [];
+
+  if (getAuthToken()) {
+    const saved = localStorage.getItem("evorix_financial_transactions");
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        if (parsed.some((t: any) => t.id === "1" || String(t.description || "").includes("Recebimento OS #1042"))) {
+          localStorage.removeItem("evorix_financial_transactions");
+          return [];
+        }
+        return parsed;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
 
   const saved = localStorage.getItem("evorix_financial_transactions");
   if (!saved) {
@@ -715,7 +769,25 @@ export function getLocalServiceOrders() {
     },
   ];
 
-  if (typeof window === "undefined") return defaultOrders;
+  if (typeof window === "undefined") return [];
+
+  if (getAuthToken()) {
+    const saved = localStorage.getItem("evorix_service_orders");
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        if (parsed.some((o: any) => o.id === "os-001" || String(o.publicToken || "").startsWith("demo-token"))) {
+          localStorage.removeItem("evorix_service_orders");
+          return [];
+        }
+        return parsed;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
 
   const saved = localStorage.getItem("evorix_service_orders");
   if (!saved) {
@@ -1225,14 +1297,14 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
     return {
       period: { startDate: "01/09/2026", endDate: "30/09/2026" },
       summary: {
-        grossRevenue: 48950.0,
-        deductions: 1420.0,
-        netRevenue: 47530.0,
-        directCosts: 16840.0,
-        grossProfit: 30690.0,
-        operatingExpenses: 11200.0,
-        netProfit: 19490.0,
-        netMarginPercent: 41.01,
+        grossRevenue: 0,
+        deductions: 0,
+        netRevenue: 0,
+        directCosts: 0,
+        grossProfit: 0,
+        operatingExpenses: 0,
+        netProfit: 0,
+        netMarginPercent: 0,
       },
       breakdown: [],
     };
@@ -1242,7 +1314,7 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
     const allTransactions = getLocalFinancialTransactions();
     const pending = allTransactions.filter((t: any) => t.status === "PENDING" || !t.status);
 
-    const baseBalance = 25600.0;
+    const baseBalance = 0;
     const projectedReceivables = pending
       .filter((t: any) => t.transactionType === "RECEIVABLE")
       .reduce((sum: number, t: any) => sum + Number(t.netAmount || 0), 0);
@@ -1264,8 +1336,7 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
       projectedFinalBalance,
       pendingCount: pending.length,
       accounts: [
-        { id: "1", name: "Caixa Balcão 1", currentBalance: 1250.0, accountType: "CASH_REGISTER" },
-        { id: "2", name: "Itaú Empresas PJ", currentBalance: 24350.0, accountType: "CHECKING_ACCOUNT" },
+        { id: "1", name: "Caixa Gaveta Balcão", currentBalance: 0, accountType: "CASH_REGISTER" },
       ],
       upcomingTransactions: upcoming,
     };

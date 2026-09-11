@@ -74,14 +74,14 @@ export default function DreReportPage() {
   }, [startDate, endDate]);
 
   const s = dre?.summary || {
-    grossRevenue: 48950.0,
-    deductions: 1420.0,
-    netRevenue: 47530.0,
-    directCosts: 16840.0,
-    grossProfit: 30690.0,
-    operatingExpenses: 11200.0,
-    netProfit: 19490.0,
-    netMarginPercent: 41.01,
+    grossRevenue: 0,
+    deductions: 0,
+    netRevenue: 0,
+    directCosts: 0,
+    grossProfit: 0,
+    operatingExpenses: 0,
+    netProfit: 0,
+    netMarginPercent: 0,
   };
 
   return (

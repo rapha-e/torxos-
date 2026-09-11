@@ -78,21 +78,25 @@ export default function CashFlowPage() {
           .filter((t: any) => t.transactionType === "PAYABLE")
           .reduce((sum: number, t: any) => sum + Number(t.netAmount || 0), 0);
 
-        const baseBal = res && typeof res.currentTotalBalance === "number" ? res.currentTotalBalance : 25600.0;
+        const baseBal = res && typeof res.currentTotalBalance === "number" ? res.currentTotalBalance : 0;
         
         setData({
           currentTotalBalance: baseBal,
-          projectedReceivables: sumRec > 0 ? sumRec : (res?.projectedReceivables || 0),
-          projectedPayables: sumPay > 0 ? sumPay : (res?.projectedPayables || 0),
-          projectedFinalBalance: baseBal + (sumRec > 0 ? sumRec : (res?.projectedReceivables || 0)) - (sumPay > 0 ? sumPay : (res?.projectedPayables || 0)),
-          accounts: res?.accounts && res.accounts.length > 0 ? res.accounts : [
-            { id: "1", name: "Caixa Balcão 1", currentBalance: 1250.0, accountType: "CASH_REGISTER" },
-            { id: "2", name: "Itaú Empresas PJ", currentBalance: 24350.0, accountType: "CHECKING_ACCOUNT" },
-          ],
-          upcomingTransactions: pending.length > 0 ? pending : (res?.upcomingTransactions || []),
+          projectedReceivables: sumRec,
+          projectedPayables: sumPay,
+          projectedFinalBalance: baseBal + sumRec - sumPay,
+          accounts: res?.accounts || [],
+          upcomingTransactions: pending,
         });
       } else {
-        setData(res);
+        setData(res || {
+          currentTotalBalance: 0,
+          projectedReceivables: 0,
+          projectedPayables: 0,
+          projectedFinalBalance: 0,
+          accounts: [],
+          upcomingTransactions: [],
+        });
       }
     } catch (err) {
       console.error("Erro ao carregar fluxo de caixa:", err);
@@ -191,19 +195,12 @@ export default function CashFlowPage() {
   }, []);
 
   const d = data || {
-    currentTotalBalance: 25600.0,
-    projectedReceivables: 18450.0,
-    projectedPayables: 9200.0,
-    projectedFinalBalance: 34850.0,
-    accounts: [
-      { id: "1", name: "Caixa Balcão 1", currentBalance: 1250.0, accountType: "CASH_REGISTER" },
-      { id: "2", name: "Itaú Empresas PJ", currentBalance: 24350.0, accountType: "CHECKING_ACCOUNT" },
-    ],
-    upcomingTransactions: [
-      { description: "Recebível OS #1042 (Mariana Alcantara)", netAmount: 1100.0, dueDate: "2026-09-05", transactionType: "RECEIVABLE" },
-      { description: "Fornecedor Atacadista Telas SP", netAmount: 3800.0, dueDate: "2026-09-08", transactionType: "PAYABLE" },
-      { description: "Aluguel & Condomínio Ponto Comercial", netAmount: 4200.0, dueDate: "2026-09-10", transactionType: "PAYABLE" },
-    ],
+    currentTotalBalance: 0,
+    projectedReceivables: 0,
+    projectedPayables: 0,
+    projectedFinalBalance: 0,
+    accounts: [],
+    upcomingTransactions: [],
   };
 
   return (

@@ -87,14 +87,20 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4">
             <h3 className="text-2xl font-bold tracking-tight text-[#1C1C1A] tabular-nums">
-              {formatCurrency(dre?.summary?.grossRevenue || 48950.0)}
+              {loading ? "..." : formatCurrency(dre?.summary?.grossRevenue ?? 0)}
             </h3>
             <div className="flex items-center gap-1.5 mt-2">
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-[#DCFCE7] px-2 py-0.5 rounded-full border border-[#BBF7D0]">
-                <TrendingUp className="w-3 h-3 text-emerald-700" strokeWidth={2} />
-                <span className="tabular-nums">+18.4%</span>
-              </span>
-              <span className="text-[11px] text-[#71716C]">vs mês anterior</span>
+              {Number(dre?.summary?.grossRevenue || 0) > 0 ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-[#DCFCE7] px-2 py-0.5 rounded-full border border-[#BBF7D0]">
+                  <TrendingUp className="w-3 h-3 text-emerald-700" strokeWidth={2} />
+                  <span className="tabular-nums">Mês Atual</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#71716C] bg-[#F3F3EF] px-2 py-0.5 rounded-full border border-[rgba(28,25,23,0.06)]">
+                  <span>Sem faturamento</span>
+                </span>
+              )}
+              <span className="text-[11px] text-[#71716C]">regime competência</span>
             </div>
           </div>
         </div>
@@ -111,11 +117,11 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4">
             <h3 className="text-2xl font-bold tracking-tight text-[#1C1C1A] tabular-nums">
-              {formatCurrency(dre?.summary?.netProfit || 19490.0)}
+              {loading ? "..." : formatCurrency(dre?.summary?.netProfit ?? 0)}
             </h3>
             <div className="flex items-center gap-1.5 mt-2">
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-[#DCFCE7] px-2 py-0.5 rounded-full border border-[#BBF7D0]">
-                <span className="tabular-nums">Margem: {dre?.summary?.netMarginPercent || 41.0}%</span>
+                <span className="tabular-nums">Margem: {Number(dre?.summary?.netMarginPercent ?? 0).toFixed(1)}%</span>
               </span>
               <span className="text-[11px] text-[#71716C]">após custos & peças</span>
             </div>
@@ -134,7 +140,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4">
             <h3 className="text-2xl font-bold tracking-tight text-[#1C1C1A] tabular-nums">
-              {briefing?.kpis?.totalServiceOrders || 28} <span className="text-sm font-normal text-[#71716C]">aparelhos</span>
+              {loading ? "..." : (briefing?.kpis?.totalServiceOrders ?? 0)} <span className="text-sm font-normal text-[#71716C]">aparelhos</span>
             </h3>
             <Link
               href="/os/kanban"
