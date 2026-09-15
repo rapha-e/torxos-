@@ -77,6 +77,7 @@ model Tenant {
   sales                 Sale[]
   saleItems             SaleItem[]
   aiMentorSessions      AiMentorSession[]
+  auditLogs             AuditLog[]
 
   @@map("tenants")
 }
@@ -347,6 +348,13 @@ model Sale {
   changeAmount          Decimal?               @default(0.00) @map("change_amount") @db.Decimal(15, 2)
   status                String                 @default("COMPLETED") @db.VarChar(30)
   notes                 String?                @db.Text
+  canceledAt            DateTime?              @map("canceled_at") @db.Timestamptz
+  cancelReason          String?                @map("cancel_reason") @db.Text
+  canceledById          String?                @map("canceled_by_id") @db.Uuid
+  canceledByName        String?                @map("canceled_by_name") @db.VarChar(150)
+  authorizedById        String?                @map("authorized_by_id") @db.Uuid
+  authorizedByName      String?                @map("authorized_by_name") @db.VarChar(150)
+  auditTrail            Json?                  @map("audit_trail")
   createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz
   updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -381,3 +389,24 @@ model SaleItem {
   @@index([productId], name: "idx_sale_items_product_id")
   @@map("sale_items")
 }
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  userName    String?  @map("user_name") @db.VarChar(150)
+  userRole    String?  @map("user_role") @db.VarChar(50)
+  action      String   @db.VarChar(80)
+  entity      String   @db.VarChar(80)
+  entityId    String?  @map("entity_id") @db.VarChar(100)
+  details     Json?
+  ipAddress   String?  @map("ip_address") @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, action], name: "idx_audit_tenant_action")
+  @@index([tenantId, createdAt], name: "idx_audit_tenant_created")
+  @@map("audit_logs")
+}
+

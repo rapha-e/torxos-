@@ -27,6 +27,7 @@ import {
   Store,
   ArrowRightLeft,
   Check,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrentUser, getAuthToken, fetchApi, clearAllTenantCache } from "@/lib/api";
@@ -75,6 +76,11 @@ const navigation: NavItem[] = [
       { name: "Todas as OS", href: "/os" },
       { name: "Abrir Nova OS", href: "/os/nova" },
     ],
+  },
+  {
+    name: "Clientes & Contatos",
+    href: "/clientes",
+    icon: Users,
   },
   {
     name: "Almoxarifado & Estoque",

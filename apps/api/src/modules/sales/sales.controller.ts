@@ -2,8 +2,9 @@ import { Controller, Get, Post, Body, Param, Query, UseGuards } from "@nestjs/co
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 import { SalesService } from "./sales.service";
 import { CreateSaleDto } from "./dto/create-sale.dto";
+import { CancelSaleDto } from "./dto/cancel-sale.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { CurrentTenant } from "../../common/decorators/user.decorator";
+import { CurrentTenant, CurrentUser, AuthenticatedUser } from "../../common/decorators/user.decorator";
 
 @ApiTags("TorxOS Sales & PDV (Frente de Caixa & Balcão)")
 @ApiBearerAuth()
@@ -47,8 +48,13 @@ export class SalesController {
   }
 
   @Post(":id/cancel")
-  @ApiOperation({ summary: "Cancelar venda com estorno automático de estoque e transações financeiras" })
-  async cancelSale(@CurrentTenant() tenantId: string, @Param("id") id: string) {
-    return this.salesService.cancel(tenantId, id);
+  @ApiOperation({ summary: "Cancelar venda com autorização de administrador, estorno de estoque, caixa e auditoria" })
+  async cancelSale(
+    @CurrentTenant() tenantId: string,
+    @Param("id") id: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() dto: CancelSaleDto,
+  ) {
+    return this.salesService.cancel(tenantId, id, currentUser, dto);
   }
 }

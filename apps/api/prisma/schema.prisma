@@ -41,6 +41,7 @@ model Tenant {
   bankAccounts          BankAccount[]
   financialTransactions FinancialTransaction[]
   aiMentorSessions      AiMentorSession[]
+  auditLogs             AuditLog[]
 
   @@map("tenants")
 }
@@ -290,6 +291,13 @@ model Sale {
   changeAmount          Decimal?               @default(0.00)
   status                String                 @default("COMPLETED")
   notes                 String?
+  canceledAt            DateTime?
+  cancelReason          String?
+  canceledById          String?
+  canceledByName        String?
+  authorizedById        String?
+  authorizedByName      String?
+  auditTrail            String?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @default(now()) @updatedAt
 
@@ -342,4 +350,24 @@ model AiMentorSession {
 
   @@index([tenantId, pillar], name: "idx_ai_tenant_pillar")
   @@map("ai_mentor_sessions")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String
+  userId      String?
+  userName    String?
+  userRole    String?
+  action      String
+  entity      String
+  entityId    String?
+  details     String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, action], name: "idx_audit_tenant_action")
+  @@index([tenantId, createdAt], name: "idx_audit_tenant_created")
+  @@map("audit_logs")
 }

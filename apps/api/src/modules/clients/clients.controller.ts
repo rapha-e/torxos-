@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 import { ClientsService } from "./clients.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -25,8 +25,24 @@ export class ClientsController {
   }
 
   @Get(":id")
-  @ApiOperation({ summary: "Detalhes do cliente com histórico de Ordens de Serviço" })
+  @ApiOperation({ summary: "Detalhes do cliente com histórico de Ordens de Serviço e Vendas" })
   async findById(@CurrentTenant() tenantId: string, @Param("id") id: string) {
     return this.clientsService.findById(tenantId, id);
+  }
+
+  @Put(":id")
+  @ApiOperation({ summary: "Atualizar dados do cliente" })
+  async update(
+    @CurrentTenant() tenantId: string,
+    @Param("id") id: string,
+    @Body() data: any,
+  ) {
+    return this.clientsService.update(tenantId, id, data);
+  }
+
+  @Delete(":id")
+  @ApiOperation({ summary: "Excluir cliente (se não possuir OS ou vendas vinculadas)" })
+  async delete(@CurrentTenant() tenantId: string, @Param("id") id: string) {
+    return this.clientsService.delete(tenantId, id);
   }
 }

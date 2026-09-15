@@ -1,7 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateSaleDto } from "./dto/create-sale.dto";
+import { CancelSaleDto } from "./dto/cancel-sale.dto";
 import { TransactionType, TransactionStatus } from "../../common/enums";
+import { AuthenticatedUser } from "../../common/decorators/user.decorator";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class SalesService {
@@ -327,17 +330,77 @@ export class SalesService {
   }
 
   /**
-   * Cancela uma venda com estorno automático de estoque e financeiro
+   * Cancela uma venda com autorização de administrador,
+   * estorno atômico de estoque, estorno do caixa financeiro e trilha de auditoria.
    */
-  async cancel(tenantId: string, id: string) {
+  async cancel(tenantId: string, id: string, currentUser: AuthenticatedUser, dto: CancelSaleDto) {
     const sale = await this.findById(tenantId, id);
 
     if (sale.status === "CANCELED") {
       throw new BadRequestException("Esta venda já está cancelada.");
     }
 
+    if (!dto.reason || dto.reason.trim().length < 3) {
+      throw new BadRequestException("O motivo do cancelamento é obrigatório e deve ser justificado.");
+    }
+
+    if (!dto.adminPassword || dto.adminPassword.trim() === "") {
+      throw new BadRequestException("A senha de autorização do administrador é obrigatória.");
+    }
+
+    // 1. Validação da Autorização do Administrador
+    let authorizedById = currentUser.id;
+    let authorizedByName = currentUser.name;
+
+    const isAdmin = currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN";
+
+    if (isAdmin) {
+      // Usuário logado já é Administrador: valida a própria senha
+      const currentAdmin = await this.prisma.user.findUnique({
+        where: { id: currentUser.id },
+      });
+
+      if (!currentAdmin) {
+        throw new UnauthorizedException("Usuário administrador não encontrado.");
+      }
+
+      const passwordMatches = await bcrypt.compare(dto.adminPassword, currentAdmin.passwordHash);
+      if (!passwordMatches) {
+        throw new UnauthorizedException("Senha do administrador incorreta. Cancelamento não autorizado.");
+      }
+
+      authorizedById = currentAdmin.id;
+      authorizedByName = currentAdmin.name;
+    } else {
+      // Usuário é Atendente/Vendedor: exige e-mail e senha de um Administrador da empresa
+      if (!dto.adminEmail || dto.adminEmail.trim() === "") {
+        throw new BadRequestException("E-mail do administrador é obrigatório para autorizar este estorno.");
+      }
+
+      const adminUser = await this.prisma.user.findFirst({
+        where: {
+          email: dto.adminEmail.toLowerCase().trim(),
+          tenantId,
+          role: { in: ["ADMIN", "SUPER_ADMIN"] },
+          isActive: true,
+        },
+      });
+
+      if (!adminUser) {
+        throw new UnauthorizedException("Nenhum administrador ativo encontrado com este e-mail nesta empresa.");
+      }
+
+      const passwordMatches = await bcrypt.compare(dto.adminPassword, adminUser.passwordHash);
+      if (!passwordMatches) {
+        throw new UnauthorizedException("Senha do administrador incorreta. Autorização negada.");
+      }
+
+      authorizedById = adminUser.id;
+      authorizedByName = adminUser.name;
+    }
+
     return this.prisma.$transaction(async (tx) => {
-      // 1. Estorna cada item vendido de volta ao estoque
+      // 2. Estorno dos itens para o estoque físico
       for (const item of sale.items) {
         await tx.product.update({
           where: { id: item.productId },
@@ -347,21 +410,113 @@ export class SalesService {
             },
           },
         });
-        this.logger.log(`[ESTORNO PDV] Venda #${sale.saleNumber}: Devolvido ${item.quantity} un ao produto ${item.product?.name}`);
+        this.logger.log(`[ESTORNO ESTOQUE] Venda #${sale.saleNumber}: Devolvido ${item.quantity} un de ${item.product?.name}`);
       }
 
-      // 2. Estorna transações financeiras geradas pela venda
+      // 3. Sincronização e Estorno no Caixa Financeiro
+      const saleTransactions = await tx.financialTransaction.findMany({
+        where: { saleId: sale.id, tenantId },
+      });
+
+      const settledReceivable = saleTransactions.find(
+        (t) => t.transactionType === TransactionType.RECEIVABLE && t.status === TransactionStatus.SETTLED && t.bankAccountId
+      );
+
+      if (settledReceivable && settledReceivable.bankAccountId) {
+        const refundAmount = Number(settledReceivable.netAmount || sale.netTotal);
+        // Decrementa o saldo do Caixa para sincronizar com o cancelamento da venda
+        await tx.bankAccount.update({
+          where: { id: settledReceivable.bankAccountId },
+          data: {
+            currentBalance: {
+              decrement: refundAmount,
+            },
+          },
+        });
+        this.logger.log(
+          `[ESTORNO CAIXA] Venda #${sale.saleNumber}: Debitado R$ ${refundAmount.toFixed(2)} da conta/caixa ${settledReceivable.bankAccountId}`
+        );
+      }
+
+      // Cancela todas as transações da venda (Receita e Comissões pendentes)
       await tx.financialTransaction.updateMany({
         where: { saleId: sale.id, tenantId },
         data: { status: TransactionStatus.CANCELLED },
       });
 
-      // 3. Marca a venda como cancelada
-      return tx.sale.update({
+      // 4. Monta trilha de auditoria completa em JSON
+      const auditTrailPayload = {
+        action: "SALE_CANCELED",
+        canceledAt: new Date().toISOString(),
+        reason: dto.reason.trim(),
+        canceledBy: {
+          id: currentUser.id,
+          name: currentUser.name,
+          role: currentUser.role,
+          email: currentUser.email,
+        },
+        authorizedBy: {
+          id: authorizedById,
+          name: authorizedByName,
+        },
+        financialReversal: {
+          netAmount: Number(sale.netTotal),
+          bankAccountId: settledReceivable?.bankAccountId || null,
+          status: "REVERSED_FROM_CASH_BALANCE",
+        },
+        itemsRestored: sale.items.map((it) => ({
+          productId: it.productId,
+          productName: it.product?.name,
+          quantity: Number(it.quantity),
+        })),
+      };
+
+      // 5. Atualiza a venda com os dados do cancelamento
+      const updatedSale = await tx.sale.update({
         where: { id: sale.id },
-        data: { status: "CANCELED" },
-        include: { items: true },
+        data: {
+          status: "CANCELED",
+          canceledAt: new Date(),
+          cancelReason: dto.reason.trim(),
+          canceledById: currentUser.id,
+          canceledByName: currentUser.name,
+          authorizedById,
+          authorizedByName,
+          auditTrail: JSON.stringify(auditTrailPayload),
+        },
+        include: {
+          client: true,
+          items: { include: { product: true } },
+          seller: { select: { id: true, name: true, email: true } },
+          tenant: true,
+        },
       });
+
+      // 6. Grava registro formal na tabela de auditoria AuditLog
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+          action: "SALE_CANCELED",
+          entity: "Sale",
+          entityId: sale.id,
+          details: JSON.stringify({
+            saleNumber: sale.saleNumber,
+            netTotal: Number(sale.netTotal),
+            reason: dto.reason.trim(),
+            authorizedById,
+            authorizedByName,
+          }),
+        },
+      });
+
+      this.logger.warn(
+        `[PDV CANCELAMENTO AUDITADO] Venda #${sale.saleNumber} cancelada por ${currentUser.name}, autorizada por ${authorizedByName}. Motivo: ${dto.reason.trim()}`
+      );
+
+      return updatedSale;
     });
   }
 

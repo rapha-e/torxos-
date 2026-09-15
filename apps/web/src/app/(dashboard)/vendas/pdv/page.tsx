@@ -25,8 +25,11 @@ import {
   ArrowRight,
   ShieldCheck,
   User,
+  Users,
   Zap,
   Package,
+  FileDown,
+  X,
 } from "lucide-react";
 import { fetchApi, getCurrentUser } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
@@ -111,8 +114,47 @@ export default function PdvPage() {
     }
   };
 
-  // Modal de Comprovante Térmico Concluído
+  // Modal de Cadastro Rápido de Cliente no PDV
+  const [showNewClientModal, setShowNewClientModal] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientDocument, setNewClientDocument] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientAddress, setNewClientAddress] = useState("");
+  const [savingClient, setSavingClient] = useState(false);
+  const [clientModalError, setClientModalError] = useState("");
+
+  // Modal de Comprovante Concluído
   const [completedSale, setCompletedSale] = useState<any | null>(null);
+
+  // Handlers de Impressão Isolada do Comprovante de Venda
+  const handlePrintThermal = () => {
+    document.body.classList.remove("printing-a4");
+    document.body.classList.add("printing-receipt");
+    setTimeout(() => {
+      window.print();
+      const cleanUp = () => {
+        document.body.classList.remove("printing-receipt");
+        window.removeEventListener("afterprint", cleanUp);
+      };
+      window.addEventListener("afterprint", cleanUp);
+      setTimeout(() => document.body.classList.remove("printing-receipt"), 1500);
+    }, 150);
+  };
+
+  const handlePrintA4 = () => {
+    document.body.classList.remove("printing-receipt");
+    document.body.classList.add("printing-a4");
+    setTimeout(() => {
+      window.print();
+      const cleanUp = () => {
+        document.body.classList.remove("printing-a4");
+        window.removeEventListener("afterprint", cleanUp);
+      };
+      window.addEventListener("afterprint", cleanUp);
+      setTimeout(() => document.body.classList.remove("printing-a4"), 1500);
+    }, 150);
+  };
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -374,6 +416,45 @@ export default function PdvPage() {
       alert(`Erro ao cadastrar produto: ${err.message}`);
     } finally {
       setSavingProduct(false);
+    }
+  };
+
+  // 11. Cadastro Rápido de Cliente no PDV
+  const handleQuickCreateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClientName.trim() || !newClientPhone.trim() || savingClient) return;
+
+    setSavingClient(true);
+    setClientModalError("");
+    try {
+      const payload = {
+        name: newClientName.trim(),
+        phone: newClientPhone.trim(),
+        document: newClientDocument.trim() || undefined,
+        email: newClientEmail.trim() || undefined,
+        address: newClientAddress.trim() || undefined,
+      };
+
+      const created = await fetchApi("/clients", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      if (created && created.id) {
+        setClients((prev) => [created, ...prev]);
+        setSelectedClientId(created.id);
+      }
+
+      setShowNewClientModal(false);
+      setNewClientName("");
+      setNewClientPhone("");
+      setNewClientDocument("");
+      setNewClientEmail("");
+      setNewClientAddress("");
+    } catch (err: any) {
+      setClientModalError(err.message || "Erro ao cadastrar cliente.");
+    } finally {
+      setSavingClient(false);
     }
   };
 
@@ -791,6 +872,37 @@ export default function PdvPage() {
               </div>
             )}
 
+            {/* Seleção do Cliente / Consumidor Final */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[#1C1C1A] flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-[#71716C]" />
+                  <span>Cliente / Comprador:</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowNewClientModal(true)}
+                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Novo Cliente</span>
+                </button>
+              </div>
+
+              <select
+                value={selectedClientId}
+                onChange={(e) => setSelectedClientId(e.target.value)}
+                className="w-full px-3 py-2 bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-xl text-xs text-[#1C1C1A] focus:outline-none focus:bg-white"
+              >
+                <option value="">Consumidor Final (Sem cadastro)</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.phone ? `(${c.phone})` : ""} {c.document ? `— CPF: ${c.document}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Observações da Venda */}
             <div className="space-y-1">
               <label className="text-xs text-[#71716C]">Observações no Comprovante:</label>
@@ -817,11 +929,11 @@ export default function PdvPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL DE COMPROVANTE TÉRMICO DE VENDA (80mm)                               */}
+      {/* MODAL DE COMPROVANTE DE VENDA (80mm E A4)                                 */}
       {/* ========================================================================= */}
       {completedSale && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-2xl border border-[rgba(28,25,23,0.12)] shadow-2xl p-6 space-y-4 animate-in zoom-in-95">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+          <div className="bg-white w-full max-w-md rounded-2xl border border-[rgba(28,25,23,0.12)] shadow-2xl p-6 space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-emerald-700">
                 <CheckCircle2 className="w-5 h-5" />
@@ -835,11 +947,8 @@ export default function PdvPage() {
               </button>
             </div>
 
-            {/* Cupom Térmico Estilizado */}
-            <div
-              id="thermal-receipt"
-              className="bg-[#FAFAFA] p-4 rounded-xl border border-dashed border-[rgba(28,25,23,0.2)] font-mono text-[11px] text-[#1C1C1A] space-y-2.5"
-            >
+            {/* Cupom Térmico Estilizado Preview */}
+            <div className="bg-[#FAFAFA] p-4 rounded-xl border border-dashed border-[rgba(28,25,23,0.2)] font-mono text-[11px] text-[#1C1C1A] space-y-2.5">
               <div className="text-center pb-2 border-b border-dashed border-gray-300 space-y-0.5">
                 {tenantInfo?.logoUrl && (
                   <div className="flex justify-center mb-1.5">
@@ -853,11 +962,35 @@ export default function PdvPage() {
                 <h4 className="font-bold text-xs uppercase tracking-wider">
                   {tenantInfo?.name || tenantInfo?.tradeName || getCurrentUser()?.tenantName || "Assistência Técnica"}
                 </h4>
-                <p className="text-[9px] text-[#71716C]">Acessórios, Eletrônicos & Manutenção</p>
+                {tenantInfo?.document && <p className="text-[9px] text-[#71716C]">CNPJ/CPF: {tenantInfo.document}</p>}
+                {tenantInfo?.phone && <p className="text-[9px] text-[#71716C]">Tel: {tenantInfo.phone}</p>}
                 <p className="text-[10px] font-bold mt-1">COMPROVANTE DE VENDA DE BALCÃO</p>
                 <p className="text-[9px] text-[#71716C]">
-                  Venda #{completedSale.saleNumber} • {new Date().toLocaleDateString("pt-BR")} {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  Venda #{completedSale.saleNumber} • {new Date().toLocaleDateString("pt-BR")}{" "}
+                  {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </p>
+              </div>
+
+              {/* DADOS DO CLIENTE */}
+              <div className="py-1.5 border-b border-dashed border-gray-300 space-y-0.5 text-[10px]">
+                <div className="flex justify-between">
+                  <span className="font-bold text-gray-600">CLIENTE:</span>
+                  <span className="font-bold">
+                    {completedSale.client?.name || (clients.find((c) => c.id === selectedClientId)?.name) || "Consumidor Final"}
+                  </span>
+                </div>
+                {(completedSale.client?.document || clients.find((c) => c.id === selectedClientId)?.document) && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">CPF/CNPJ:</span>
+                    <span>{completedSale.client?.document || clients.find((c) => c.id === selectedClientId)?.document}</span>
+                  </div>
+                )}
+                {(completedSale.client?.phone || clients.find((c) => c.id === selectedClientId)?.phone) && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">TEL:</span>
+                    <span>{completedSale.client?.phone || clients.find((c) => c.id === selectedClientId)?.phone}</span>
+                  </div>
+                )}
               </div>
 
               {/* Itens */}
@@ -865,7 +998,7 @@ export default function PdvPage() {
                 {completedSale.items?.map((item: any, i: number) => (
                   <div key={i} className="flex justify-between leading-tight">
                     <div>
-                      <span>{item.quantity}x {item.product?.name || "Produto"}</span>
+                      <span>{Number(item.quantity)}x {item.product?.name || "Produto"}</span>
                       {item.imeiOrSerial && (
                         <span className="block text-[9px] text-gray-500">IMEI: {item.imeiOrSerial}</span>
                       )}
@@ -900,21 +1033,362 @@ export default function PdvPage() {
             </div>
 
             {/* Ações do Cupom */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => window.print()}
-                className="flex-1 py-2.5 rounded-xl bg-[#1C1C1A] text-white hover:bg-black font-bold text-xs flex items-center justify-center gap-2 transition"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Imprimir Recibo (80mm)</span>
-              </button>
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  onClick={handlePrintThermal}
+                  className="py-2.5 px-3 rounded-xl bg-[#1C1C1A] text-white hover:bg-black font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Imprimir Recibo (80mm)</span>
+                </button>
+                <button
+                  onClick={handlePrintA4}
+                  className="py-2.5 px-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  <span>Imprimir Normal (A4)</span>
+                </button>
+              </div>
+
               <button
                 onClick={() => setCompletedSale(null)}
-                className="px-4 py-2.5 rounded-xl border border-[rgba(28,25,23,0.12)] text-[#1C1C1A] hover:bg-[#F3F3EF] font-bold text-xs transition"
+                className="w-full py-2 rounded-xl border border-[rgba(28,25,23,0.12)] text-[#1C1C1A] hover:bg-[#F3F3EF] font-bold text-xs transition"
               >
                 Nova Venda
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* COMPONENTES DE IMPRESSÃO ISOLADOS (80MM E A4)                              */}
+      {/* ========================================================================= */}
+      {completedSale && (
+        <>
+          {/* 1. Recibo Térmico 80mm Isolado */}
+          <div id="thermal-receipt" className="hidden">
+            <div style={{ fontFamily: "monospace", fontSize: "11px", lineHeight: "1.3", color: "#000" }}>
+              <div style={{ textAlign: "center", borderBottom: "1px dashed #000", paddingBottom: "6px", marginBottom: "6px" }}>
+                <div style={{ fontWeight: "bold", fontSize: "13px", textTransform: "uppercase" }}>
+                  {tenantInfo?.tradeName || tenantInfo?.name || "ASSISTÊNCIA TÉCNICA"}
+                </div>
+                {tenantInfo?.document && <div>CNPJ/CPF: {tenantInfo.document}</div>}
+                {tenantInfo?.phone && <div>Tel: {tenantInfo.phone}</div>}
+                {tenantInfo?.address && <div>{tenantInfo.address}</div>}
+                <div style={{ fontWeight: "bold", marginTop: "4px" }}>COMPROVANTE DE VENDA DE BALCÃO</div>
+                <div>
+                  Venda #{completedSale.saleNumber} • {new Date().toLocaleDateString("pt-BR")}{" "}
+                  {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </div>
+              </div>
+
+              {/* DADOS DO CLIENTE */}
+              <div style={{ borderBottom: "1px dashed #000", paddingBottom: "5px", marginBottom: "5px" }}>
+                <div>
+                  <strong>CLIENTE:</strong>{" "}
+                  {completedSale.client?.name || (clients.find((c) => c.id === selectedClientId)?.name) || "Consumidor Final"}
+                </div>
+                {(completedSale.client?.document || clients.find((c) => c.id === selectedClientId)?.document) && (
+                  <div>
+                    <strong>CPF/CNPJ:</strong>{" "}
+                    {completedSale.client?.document || clients.find((c) => c.id === selectedClientId)?.document}
+                  </div>
+                )}
+                {(completedSale.client?.phone || clients.find((c) => c.id === selectedClientId)?.phone) && (
+                  <div>
+                    <strong>TEL:</strong>{" "}
+                    {completedSale.client?.phone || clients.find((c) => c.id === selectedClientId)?.phone}
+                  </div>
+                )}
+              </div>
+
+              {/* ITENS */}
+              <div style={{ borderBottom: "1px dashed #000", paddingBottom: "6px", marginBottom: "6px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", marginBottom: "4px" }}>
+                  <span>ITEM</span>
+                  <span>TOTAL</span>
+                </div>
+                {completedSale.items?.map((it: any, i: number) => (
+                  <div key={i} style={{ marginBottom: "3px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>{Number(it.quantity)}x {it.product?.name || "Produto"}</span>
+                      <span>{formatCurrency(it.totalAmount)}</span>
+                    </div>
+                    {it.imeiOrSerial && <div style={{ fontSize: "9px" }}>IMEI: {it.imeiOrSerial}</div>}
+                  </div>
+                ))}
+              </div>
+
+              {/* TOTAL */}
+              <div style={{ borderBottom: "1px dashed #000", paddingBottom: "6px", marginBottom: "6px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "13px" }}>
+                  <span>TOTAL PAGO:</span>
+                  <span>{formatCurrency(completedSale.netTotal)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px" }}>
+                  <span>FORMA:</span>
+                  <span>{completedSale.paymentMethod}</span>
+                </div>
+                {Number(completedSale.changeAmount) > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px" }}>
+                    <span>TROCO:</span>
+                    <span>{formatCurrency(completedSale.changeAmount)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ textAlign: "center", fontSize: "9px", paddingTop: "4px" }}>
+                <p>Garantia de 90 dias com este cupom.</p>
+                <p>Agradecemos a preferência!</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Documento Normal A4 Isolado */}
+          <div id="a4-sale-document" className="hidden">
+            <div style={{ fontFamily: "Arial, sans-serif", fontSize: "11pt", color: "#111", lineHeight: "1.4" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #111", paddingBottom: "12px", marginBottom: "16px" }}>
+                <div>
+                  <h1 style={{ margin: "0 0 4px 0", fontSize: "16pt", fontWeight: "bold", textTransform: "uppercase" }}>
+                    {tenantInfo?.tradeName || tenantInfo?.name || "Assistência Técnica"}
+                  </h1>
+                  {tenantInfo?.document && <div style={{ fontSize: "9pt" }}>CNPJ/CPF: {tenantInfo.document}</div>}
+                  {tenantInfo?.phone && <div style={{ fontSize: "9pt" }}>Tel / WhatsApp: {tenantInfo.phone}</div>}
+                  {tenantInfo?.address && <div style={{ fontSize: "9pt" }}>Endereço: {tenantInfo.address}</div>}
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "14pt", fontWeight: "bold" }}>DOCUMENTO DE VENDA DE BALCÃO</div>
+                  <div style={{ fontSize: "12pt", fontWeight: "bold", marginTop: "4px" }}>Nº {completedSale.saleNumber}</div>
+                  <div style={{ fontSize: "9pt", color: "#555" }}>
+                    Data: {new Date().toLocaleDateString("pt-BR")} às {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dados do Cliente */}
+              <div style={{ border: "1px solid #ccc", borderRadius: "6px", padding: "10px", marginBottom: "16px", backgroundColor: "#fcfcfc" }}>
+                <div style={{ fontWeight: "bold", fontSize: "10pt", borderBottom: "1px solid #e5e5e5", paddingBottom: "4px", marginBottom: "6px" }}>
+                  DADOS DO CLIENTE / COMPRADOR
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "9.5pt" }}>
+                  <div>
+                    <strong>Nome / Razão Social:</strong>{" "}
+                    {completedSale.client?.name || (clients.find((c) => c.id === selectedClientId)?.name) || "Consumidor Final"}
+                  </div>
+                  <div>
+                    <strong>CPF / CNPJ:</strong>{" "}
+                    {completedSale.client?.document || clients.find((c) => c.id === selectedClientId)?.document || "Não informado"}
+                  </div>
+                  <div>
+                    <strong>Telefone / WhatsApp:</strong>{" "}
+                    {completedSale.client?.phone || clients.find((c) => c.id === selectedClientId)?.phone || "Não informado"}
+                  </div>
+                  <div>
+                    <strong>E-mail:</strong>{" "}
+                    {completedSale.client?.email || clients.find((c) => c.id === selectedClientId)?.email || "Não informado"}
+                  </div>
+                  <div style={{ gridColumn: "span 2" }}>
+                    <strong>Endereço:</strong>{" "}
+                    {completedSale.client?.address || clients.find((c) => c.id === selectedClientId)?.address || "Não informado"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabela de Produtos */}
+              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px", fontSize: "9.5pt" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "#f3f3f3", borderBottom: "1px solid #ccc" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Item / Descrição</th>
+                    <th style={{ padding: "8px", textAlign: "center", width: "70px" }}>Qtd</th>
+                    <th style={{ padding: "8px", textAlign: "right", width: "110px" }}>Valor Unit.</th>
+                    <th style={{ padding: "8px", textAlign: "right", width: "110px" }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completedSale.items?.map((it: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "8px" }}>
+                        <strong>{it.product?.name || "Produto"}</strong>
+                        {it.imeiOrSerial && (
+                          <span style={{ display: "block", fontSize: "8.5pt", color: "#555" }}>
+                            IMEI / Serial: {it.imeiOrSerial}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "center" }}>{Number(it.quantity)}</td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>{formatCurrency(it.unitPrice)}</td>
+                      <td style={{ padding: "8px", textAlign: "right", fontWeight: "bold" }}>{formatCurrency(it.totalAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Totalizador */}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "24px" }}>
+                <div style={{ width: "260px", border: "1px solid #ccc", borderRadius: "6px", padding: "10px", backgroundColor: "#fafafa", fontSize: "10pt" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(completedSale.totalAmount)}</span>
+                  </div>
+                  {Number(completedSale.discountAmount) > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", color: "#b91c1c" }}>
+                      <span>Desconto:</span>
+                      <span>- {formatCurrency(completedSale.discountAmount)}</span>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "12pt", borderTop: "1px solid #ccc", paddingTop: "6px" }}>
+                    <span>TOTAL PAGO:</span>
+                    <span>{formatCurrency(completedSale.netTotal)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "9pt", color: "#555", marginTop: "4px" }}>
+                    <span>Forma:</span>
+                    <span>{completedSale.paymentMethod}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Termo de Garantia */}
+              <div style={{ borderTop: "1px solid #ccc", paddingTop: "10px", fontSize: "8.5pt", color: "#444", marginBottom: "40px" }}>
+                <strong>TERMO DE GARANTIA E CONDIÇÕES:</strong>
+                <p style={{ margin: "4px 0" }}>
+                  1. Os produtos e acessórios comercializados possuem garantia legal de 90 (noventa) dias contra defeitos de fabricação, conforme artigo 26 do Código de Defesa do Consumidor.
+                </p>
+                <p style={{ margin: "4px 0" }}>
+                  2. A garantia não cobre danos decorrentes de mau uso, quedas, contato com líquidos, violação de selos de lacre ou intervenção de terceiros não autorizados.
+                </p>
+              </div>
+
+              {/* Assinatura */}
+              <div style={{ display: "flex", justifyContent: "space-around", marginTop: "40px" }}>
+                <div style={{ textAlign: "center", width: "220px", borderTop: "1px solid #000", paddingTop: "6px", fontSize: "9pt" }}>
+                  Assinatura do Cliente
+                </div>
+                <div style={{ textAlign: "center", width: "220px", borderTop: "1px solid #000", paddingTop: "6px", fontSize: "9pt" }}>
+                  {tenantInfo?.tradeName || tenantInfo?.name || "Assistência Técnica"}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL DE CADASTRO RÁPIDO DE CLIENTE NO PDV                                */}
+      {/* ========================================================================= */}
+      {showNewClientModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl border border-[rgba(28,25,23,0.12)] shadow-2xl p-6 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-[rgba(28,25,23,0.08)]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#1C1C1A] text-white flex items-center justify-center shrink-0">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#1C1C1A]">Cadastrar Cliente no Balcão</h3>
+                  <p className="text-[11px] text-[#71716C]">
+                    Cadastre na hora para sair no comprovante e associar à venda.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowNewClientModal(false)}
+                className="text-xs text-[#71716C] hover:text-[#1C1C1A]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {clientModalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{clientModalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleQuickCreateClient} className="space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1C1C1A]">
+                  Nome Completo <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Roberto Silva"
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-xl text-xs text-[#1C1C1A] focus:outline-none focus:bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1C1A]">
+                    WhatsApp/Telefone <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="(11) 99999-9999"
+                    value={newClientPhone}
+                    onChange={(e) => setNewClientPhone(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-xl text-xs text-[#1C1C1A] focus:outline-none focus:bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1C1A]">CPF / CNPJ</label>
+                  <input
+                    type="text"
+                    placeholder="000.000.000-00"
+                    value={newClientDocument}
+                    onChange={(e) => setNewClientDocument(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-xl text-xs text-[#1C1C1A] focus:outline-none focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1C1C1A]">E-mail (opcional)</label>
+                <input
+                  type="email"
+                  placeholder="cliente@email.com"
+                  value={newClientEmail}
+                  onChange={(e) => setNewClientEmail(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-xl text-xs text-[#1C1C1A] focus:outline-none focus:bg-white"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1C1C1A]">Endereço (opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Rua, número, bairro"
+                  value={newClientAddress}
+                  onChange={(e) => setNewClientAddress(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-xl text-xs text-[#1C1C1A] focus:outline-none focus:bg-white"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowNewClientModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-[rgba(28,25,23,0.12)] text-[#1C1C1A] hover:bg-[#F3F3EF] font-bold text-xs transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingClient}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{savingClient ? "Salvando..." : "Salvar e Vincular"}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
