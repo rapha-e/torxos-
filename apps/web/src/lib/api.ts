@@ -100,22 +100,34 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
 
     const data = await res.json();
 
-    // Se for listagem de produtos com sucesso, sincroniza no cache local
+    // Se for listagem de produtos com sucesso, sincroniza no cache local de forma leve e segura
     if (endpoint.includes("/stock/products") && Array.isArray(data)) {
       if (typeof window !== "undefined") {
-        localStorage.setItem("evorix_stock_products", JSON.stringify(data));
+        try {
+          const lightweight = data.map((p: any) => ({
+            ...p,
+            imageUrl: p.imageUrl && p.imageUrl.startsWith("data:") ? null : p.imageUrl,
+          }));
+          localStorage.setItem("evorix_stock_products", JSON.stringify(lightweight));
+        } catch (storageErr) {
+          console.warn("[TorxOS Storage] Cota de localStorage excedida para produtos, mantendo dados na memória:", storageErr);
+        }
       }
     }
 
     // Se for listagem ou criação de transações financeiras, sincroniza no cache local
     if (endpoint.includes("/finance/transactions")) {
       if (typeof window !== "undefined") {
-        if (Array.isArray(data)) {
-          localStorage.setItem("evorix_financial_transactions", JSON.stringify(data));
-        } else if (data && data.id) {
-          const current = getLocalFinancialTransactions();
-          const filtered = current.filter((t: any) => t.id !== data.id);
-          localStorage.setItem("evorix_financial_transactions", JSON.stringify([data, ...filtered]));
+        try {
+          if (Array.isArray(data)) {
+            localStorage.setItem("evorix_financial_transactions", JSON.stringify(data));
+          } else if (data && data.id) {
+            const current = getLocalFinancialTransactions();
+            const filtered = current.filter((t: any) => t.id !== data.id);
+            localStorage.setItem("evorix_financial_transactions", JSON.stringify([data, ...filtered]));
+          }
+        } catch (storageErr) {
+          console.warn("[TorxOS Storage] Cota de localStorage excedida para finanças:", storageErr);
         }
       }
     }

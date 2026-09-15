@@ -22,11 +22,11 @@ export async function compressImageFile(
   }
 
   const defaultOptions: CompressionOptions = {
-    maxSizeMB: 0.6, // Alvo de ~600 KB
-    maxWidthOrHeight: 1920, // Resolução Full HD perfeita para laudos e detalhes de peças
+    maxSizeMB: 0.25, // Alvo de ~250 KB (ultra leve e nítido)
+    maxWidthOrHeight: 1080, // Resolução ideal para telas retina sem sobrecarga
     useWebWorker: true,
     fileType: "image/webp", // Formato ultra compacto e moderno
-    initialQuality: 0.8,
+    initialQuality: 0.75,
   };
 
   const options = { ...defaultOptions, ...customOptions };
@@ -88,11 +88,12 @@ export async function compressAndConvertToDataUrl(
  */
 export async function processImageFile(
   file: File,
-  maxWidth = 1920,
-  maxHeight = 1920,
-  quality = 0.8
+  maxWidth = 1080,
+  maxHeight = 1080,
+  quality = 0.75
 ): Promise<string> {
   const { dataUrl } = await compressAndConvertToDataUrl(file, {
+    maxSizeMB: 0.25,
     maxWidthOrHeight: Math.max(maxWidth, maxHeight),
     initialQuality: quality,
     fileType: "image/webp",

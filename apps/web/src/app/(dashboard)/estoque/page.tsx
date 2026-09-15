@@ -123,28 +123,32 @@ export default function StockCatalogPage() {
   const loadCatalog = async () => {
     setLoading(true);
     try {
-      // 1. Carrega produtos em cache local primeiro para exibição instantânea
-      let localSaved: any[] = [];
-      if (typeof window !== "undefined") {
-        const savedStr = localStorage.getItem("evorix_stock_products");
-        if (savedStr) {
-          try {
-            localSaved = JSON.parse(savedStr);
-          } catch (e) {}
-        }
-      }
-
-      // 2. Busca na API NestJS
+      // 1. Busca sempre os dados oficiais e atualizados na API NestJS
       const data = await fetchApi("/stock/products");
 
       if (Array.isArray(data)) {
         setProducts(data);
       } else {
-        setProducts([]);
+        // Fallback para cache local se API retornar formato inesperado
+        let localSaved: any[] = [];
+        if (typeof window !== "undefined") {
+          try {
+            const savedStr = localStorage.getItem("evorix_stock_products");
+            if (savedStr) localSaved = JSON.parse(savedStr);
+          } catch (e) {}
+        }
+        setProducts(localSaved);
       }
     } catch (e) {
-      console.error(e);
-      setProducts([]);
+      console.error("Erro ao carregar catálogo:", e);
+      let localSaved: any[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const savedStr = localStorage.getItem("evorix_stock_products");
+          if (savedStr) localSaved = JSON.parse(savedStr);
+        } catch (err) {}
+      }
+      setProducts(localSaved);
     } finally {
       setLoading(false);
     }
@@ -178,7 +182,13 @@ export default function StockCatalogPage() {
       setProducts((prev) => {
         const next = prev.map((p) => (p.id === editingProduct.id ? updatedProduct : p));
         if (typeof window !== "undefined") {
-          localStorage.setItem("evorix_stock_products", JSON.stringify(next));
+          try {
+            const lightweight = next.map((p: any) => ({
+              ...p,
+              imageUrl: p.imageUrl && p.imageUrl.startsWith("data:") ? null : p.imageUrl,
+            }));
+            localStorage.setItem("evorix_stock_products", JSON.stringify(lightweight));
+          } catch (e) {}
         }
         return next;
       });
@@ -234,7 +244,13 @@ export default function StockCatalogPage() {
     setProducts((prev) => {
       const updated = [newProductItem, ...prev.filter((p) => p.sku !== generatedSku)];
       if (typeof window !== "undefined") {
-        localStorage.setItem("evorix_stock_products", JSON.stringify(updated));
+        try {
+          const lightweight = updated.map((p: any) => ({
+            ...p,
+            imageUrl: p.imageUrl && p.imageUrl.startsWith("data:") ? null : p.imageUrl,
+          }));
+          localStorage.setItem("evorix_stock_products", JSON.stringify(lightweight));
+        } catch (e) {}
       }
       return updated;
     });

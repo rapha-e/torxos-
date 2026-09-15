@@ -76,8 +76,12 @@ docker compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d --build e
 echo -e "\n${BLUE}⏳ 4. Aguardando inicialização dos serviços (10 segundos)...${NC}"
 sleep 10
 
-# 5. Validação de Saúde dos Contêineres
-echo -e "\n${BLUE}🔍 5. Verificando status dos contêineres Docker...${NC}"
+# 5. Sincronização do Banco de Dados PostgreSQL (Criação de Tabelas & Índices)
+echo -e "\n${BLUE}🗄️ 5. Sincronizando tabelas no PostgreSQL (Prisma DB Push)...${NC}"
+docker compose -f docker-compose.prod.yml --env-file "$ENV_FILE" exec -T evorix_api npx prisma db push --schema=./prisma/schema.postgresql.prisma
+
+# 6. Validação de Saúde dos Contêineres
+echo -e "\n${BLUE}🔍 6. Verificando status dos contêineres Docker...${NC}"
 docker compose -f docker-compose.prod.yml ps
 
 echo -e "\n${GREEN}=================================================================${NC}"
