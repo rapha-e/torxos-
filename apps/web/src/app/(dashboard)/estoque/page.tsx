@@ -80,10 +80,43 @@ export default function StockCatalogPage() {
   const [brand, setBrand] = useState("Apple");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [costPrice, setCostPrice] = useState("");
+  const [profitMargin, setProfitMargin] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [currentStock, setCurrentStock] = useState("10");
   const [shelfLocation, setShelfLocation] = useState("Gaveta A-01");
   const [leadTimeDays, setLeadTimeDays] = useState("3");
+
+  // Handlers de Cálculo Bidirecional de Margem de Lucro
+  const handleCostPriceChange = (newCost: string) => {
+    setCostPrice(newCost);
+    const c = parseFloat(newCost);
+    const m = parseFloat(profitMargin);
+    const s = parseFloat(salePrice);
+    if (c > 0 && !isNaN(m) && profitMargin.trim() !== "") {
+      setSalePrice((c * (1 + m / 100)).toFixed(2));
+    } else if (c > 0 && s > 0) {
+      setProfitMargin((((s - c) / c) * 100).toFixed(1));
+    }
+  };
+
+  const handleProfitMarginChange = (newMargin: string) => {
+    setProfitMargin(newMargin);
+    const c = parseFloat(costPrice);
+    const m = parseFloat(newMargin);
+    if (c > 0 && !isNaN(m) && newMargin.trim() !== "") {
+      setSalePrice((c * (1 + m / 100)).toFixed(2));
+    }
+  };
+
+  const handleSalePriceChange = (newSale: string) => {
+    setSalePrice(newSale);
+    const c = parseFloat(costPrice);
+    const s = parseFloat(newSale);
+    if (c > 0 && !isNaN(s) && newSale.trim() !== "") {
+      const m = ((s - c) / c) * 100;
+      setProfitMargin(m.toFixed(1));
+    }
+  };
 
   const showToast = (msg: string) => {
     setNotification(msg);
@@ -98,6 +131,7 @@ export default function StockCatalogPage() {
     setBrand("Apple");
     setImageUrl(null);
     setCostPrice("");
+    setProfitMargin("");
     setSalePrice("");
     setCurrentStock("10");
     setShelfLocation("Gaveta A-01");
@@ -112,8 +146,15 @@ export default function StockCatalogPage() {
     setCategory(product.category || "Telas e Displays");
     setBrand(product.brand || "Geral");
     setImageUrl(product.imageUrl || null);
-    setCostPrice(product.costPrice !== undefined ? product.costPrice.toString() : "");
-    setSalePrice(product.salePrice !== undefined ? product.salePrice.toString() : "");
+    const c = product.costPrice !== undefined ? Number(product.costPrice) : 0;
+    const s = product.salePrice !== undefined ? Number(product.salePrice) : 0;
+    setCostPrice(c > 0 ? c.toString() : "");
+    setSalePrice(s > 0 ? s.toString() : "");
+    if (c > 0 && s > 0) {
+      setProfitMargin((((s - c) / c) * 100).toFixed(1));
+    } else {
+      setProfitMargin("");
+    }
     setCurrentStock(product.currentStock !== undefined ? product.currentStock.toString() : "0");
     setShelfLocation(product.shelfLocation || "Gaveta A-01");
     setLeadTimeDays(product.supplierLeadTimeDays ? product.supplierLeadTimeDays.toString() : "3");
@@ -643,36 +684,58 @@ export default function StockCatalogPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-[#1C1C1A] font-semibold mb-1">
-                    Preço de Custo (R$)
+                    Preço de Custo (R$) *
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     value={costPrice}
-                    onChange={(e) => setCostPrice(e.target.value)}
+                    onChange={(e) => handleCostPriceChange(e.target.value)}
                     placeholder="0.00"
                     className="w-full px-3 py-2 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums"
+                    required
                   />
                 </div>
+
+                <div>
+                  <label className="block text-[#1C1C1A] font-semibold mb-1 flex items-center justify-between">
+                    <span>Margem (%)</span>
+                    <span className="text-[9px] text-amber-800 bg-amber-100/70 px-1 py-0.2 rounded font-mono font-bold">Auto</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={profitMargin}
+                      onChange={(e) => handleProfitMarginChange(e.target.value)}
+                      placeholder="Ex: 100"
+                      className="w-full pl-3 pr-6 py-2 rounded-xl bg-[#F9F9F7] border border-amber-400/50 focus:border-amber-500 focus:outline-none text-[#1C1C1A] tabular-nums font-semibold"
+                    />
+                    <span className="absolute right-2 top-2 text-[#71716C] font-semibold text-xs pointer-events-none">%</span>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[#1C1C1A] font-semibold mb-1">
-                    Preço Balcão (R$)
+                    Preço Balcão (R$) *
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     value={salePrice}
-                    onChange={(e) => setSalePrice(e.target.value)}
+                    onChange={(e) => handleSalePriceChange(e.target.value)}
                     placeholder="0.00"
-                    className="w-full px-3 py-2 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums font-semibold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums font-bold text-emerald-800"
+                    required
                   />
                 </div>
+
                 <div>
                   <label className="block text-[#1C1C1A] font-semibold mb-1">
-                    {editingProduct ? "Saldo em Estoque" : "Saldo Inicial (Qtd)"}
+                    {editingProduct ? "Saldo Estoque" : "Saldo Inicial"}
                   </label>
                   <input
                     type="number"
@@ -683,6 +746,21 @@ export default function StockCatalogPage() {
                   />
                 </div>
               </div>
+
+              {/* Indicador em Tempo Real de Lucro Líquido Unitário */}
+              {parseFloat(costPrice) > 0 && parseFloat(salePrice) > 0 && (
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/60 flex items-center justify-between text-xs text-emerald-900 animate-in fade-in">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <span>
+                      Lucro Bruto Unitário: <strong>{formatCurrency(parseFloat(salePrice) - parseFloat(costPrice))}</strong>
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-emerald-800 text-[11px] bg-white px-2 py-0.5 rounded-md border border-emerald-200">
+                    +{profitMargin || (((parseFloat(salePrice) - parseFloat(costPrice)) / parseFloat(costPrice)) * 100).toFixed(1)}% Margem
+                  </span>
+                </div>
+              )}
 
               <div className="pt-2 flex justify-end gap-2.5">
                 <button

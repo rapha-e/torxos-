@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { fetchApi, setAuthToken } from "@/lib/api";
 import { TorxLogo } from "@/components/ui/torxos-logo";
+import { maskCpfCnpj, validateCpfCnpj, maskPhone, validatePhone } from "@/lib/masks";
 
 function RegisterForm() {
   const router = useRouter();
@@ -40,10 +41,31 @@ function RegisterForm() {
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+
+    // Validação de Documento (CPF ou CNPJ)
+    const docValidation = validateCpfCnpj(document);
+    if (!docValidation.isValid) {
+      setDocumentError(docValidation.message || "Documento inválido.");
+      setErrorMsg(docValidation.message || "Por favor, corrija o CPF ou CNPJ informado.");
+      return;
+    }
+    setDocumentError(null);
+
+    // Validação de WhatsApp Comercial
+    const phoneValidation = validatePhone(phone);
+    if (!phoneValidation.isValid) {
+      setPhoneError(phoneValidation.message || "Telefone inválido.");
+      setErrorMsg(phoneValidation.message || "Por favor, informe um WhatsApp comercial com DDD válido.");
+      return;
+    }
+    setPhoneError(null);
+
     setLoading(true);
 
     try {
@@ -154,12 +176,24 @@ function RegisterForm() {
                   <input
                     type="text"
                     value={document}
-                    onChange={(e) => setDocument(e.target.value)}
-                    placeholder="00.000.000/0001-00"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] focus:border-[#181816] focus:outline-none text-[#1C1C1A]"
+                    onChange={(e) => {
+                      setDocument(maskCpfCnpj(e.target.value));
+                      if (documentError) setDocumentError(null);
+                    }}
+                    placeholder="00.000.000/0001-00 ou CPF"
+                    maxLength={18}
+                    className={`w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#F9F9F7] border ${
+                      documentError ? "border-red-400 bg-red-50/20" : "border-[rgba(28,25,23,0.08)]"
+                    } focus:border-[#181816] focus:outline-none text-[#1C1C1A]`}
                     required
                   />
                 </div>
+                {documentError && (
+                  <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    {documentError}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -169,12 +203,24 @@ function RegisterForm() {
                   <input
                     type="text"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      setPhone(maskPhone(e.target.value));
+                      if (phoneError) setPhoneError(null);
+                    }}
                     placeholder="(11) 99999-8888"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] focus:border-[#181816] focus:outline-none text-[#1C1C1A]"
+                    maxLength={15}
+                    className={`w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#F9F9F7] border ${
+                      phoneError ? "border-red-400 bg-red-50/20" : "border-[rgba(28,25,23,0.08)]"
+                    } focus:border-[#181816] focus:outline-none text-[#1C1C1A]`}
                     required
                   />
                 </div>
+                {phoneError && (
+                  <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    {phoneError}
+                  </p>
+                )}
               </div>
             </div>
           </div>

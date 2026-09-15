@@ -51,6 +51,7 @@ import {
 import { useRouter } from "next/navigation";
 import { fetchApi, getCurrentUser, getAuthToken, setAuthToken } from "@/lib/api";
 import { PasswordResetModal, PasswordResetData } from "@/components/ui/password-reset-modal";
+import { maskCpfCnpj, maskPhone } from "@/lib/masks";
 
 interface TenantItem {
   id: string;
@@ -1365,8 +1366,9 @@ export default function SuperAdminDashboardPage() {
                   <input
                     type="text"
                     required
+                    maxLength={18}
                     value={editFormData.document}
-                    onChange={(e) => setEditFormData({ ...editFormData, document: e.target.value })}
+                    onChange={(e) => setEditFormData({ ...editFormData, document: maskCpfCnpj(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none focus:border-[#181816]"
                   />
                 </div>
@@ -1377,8 +1379,9 @@ export default function SuperAdminDashboardPage() {
                   <input
                     type="text"
                     required
+                    maxLength={15}
                     value={editFormData.phone}
-                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                    onChange={(e) => setEditFormData({ ...editFormData, phone: maskPhone(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none focus:border-[#181816]"
                   />
                 </div>

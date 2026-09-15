@@ -24,6 +24,7 @@ import { fetchApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { PhotoChecklist, DevicePhoto } from "@/components/ui/photo-checklist";
 import { SignatureCanvas } from "@/components/ui/signature-canvas";
+import { maskPhone, validatePhone } from "@/lib/masks";
 
 export default function NewServiceOrderPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function NewServiceOrderPage() {
   // Form State
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [deviceType, setDeviceType] = useState("Smartphone");
   const [deviceBrand, setDeviceBrand] = useState("Apple");
   const [deviceModel, setDeviceModel] = useState("");
@@ -160,6 +162,16 @@ export default function NewServiceOrderPage() {
       alert("Preencha o nome do cliente, modelo do aparelho e o defeito relatado.");
       return;
     }
+
+    if (clientPhone.trim()) {
+      const phoneVal = validatePhone(clientPhone);
+      if (!phoneVal.isValid) {
+        setPhoneError(phoneVal.message || "Telefone inválido.");
+        alert(phoneVal.message || "Por favor, informe um WhatsApp válido com DDD.");
+        return;
+      }
+    }
+    setPhoneError(null);
 
     setSubmitting(true);
     try {
@@ -289,10 +301,22 @@ export default function NewServiceOrderPage() {
               <input
                 type="text"
                 value={clientPhone}
-                onChange={(e) => setClientPhone(e.target.value)}
+                onChange={(e) => {
+                  setClientPhone(maskPhone(e.target.value));
+                  if (phoneError) setPhoneError(null);
+                }}
                 placeholder="(11) 98888-7766"
-                className="w-full px-3 py-2 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] text-[#1C1C1A] focus:outline-none focus:border-[#181816]"
+                maxLength={15}
+                className={`w-full px-3 py-2 rounded-xl bg-[#F9F9F7] border ${
+                  phoneError ? "border-red-400 bg-red-50/20" : "border-[rgba(28,25,23,0.08)]"
+                } text-[#1C1C1A] focus:outline-none focus:border-[#181816]`}
               />
+              {phoneError && (
+                <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                  {phoneError}
+                </p>
+              )}
             </div>
           </div>
 

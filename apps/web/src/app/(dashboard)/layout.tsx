@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { getCurrentUser, getAuthToken, fetchApi, clearAllTenantCache } from "@/lib/api";
 import { isPlanFeatureAllowed, FeatureKey } from "@/lib/plan-rules";
 import { TorxLogo } from "@/components/ui/torxos-logo";
+import { SupportModal } from "@/components/ui/support-modal";
 
 interface SubNavItem {
   name: string;
@@ -712,6 +713,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Viewport */}
         <main className="flex-1 p-8 bg-[#F9F9F7] print:p-0 print:bg-white">{children}</main>
       </div>
+
+      {/* Central de Suporte de Fácil Acesso */}
+      <SupportModal />
     </div>
   );
 }

@@ -43,6 +43,7 @@ import { PasswordResetModal, PasswordResetData } from "@/components/ui/password-
 import { UpgradeModal } from "@/components/ui/upgrade-modal";
 import { PlanGate } from "@/components/ui/plan-gate";
 import { getPlanMaxUsers, getPlanDetails } from "@/lib/plan-rules";
+import { maskPhone, validatePhone, maskCpfCnpj, validateCpfCnpj } from "@/lib/masks";
 
 interface TeamMember {
   id: string;
@@ -73,7 +74,9 @@ export default function TenantSettingsPage() {
   const [branchTradeName, setBranchTradeName] = useState<string>("");
   const [branchLegalName, setBranchLegalName] = useState<string>("");
   const [branchDocument, setBranchDocument] = useState<string>("");
+  const [branchDocumentError, setBranchDocumentError] = useState<string | null>(null);
   const [branchPhone, setBranchPhone] = useState<string>("");
+  const [branchPhoneError, setBranchPhoneError] = useState<string | null>(null);
   const [branchEmail, setBranchEmail] = useState<string>("");
   const [creatingBranch, setCreatingBranch] = useState<boolean>(false);
 
@@ -91,6 +94,7 @@ export default function TenantSettingsPage() {
   const [legalName, setLegalName] = useState<string>("");
   const [document, setDocument] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [email, setEmail] = useState<string>("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
@@ -232,6 +236,17 @@ export default function TenantSettingsPage() {
 
   const handleSaveCompany = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (phone.trim()) {
+      const pVal = validatePhone(phone);
+      if (!pVal.isValid) {
+        setPhoneError(pVal.message || "Telefone inválido.");
+        alert(pVal.message || "Por favor, informe um WhatsApp comercial válido com DDD.");
+        return;
+      }
+    }
+    setPhoneError(null);
+
     setIsSaving(true);
     setSaveSuccess(false);
 
@@ -477,6 +492,23 @@ export default function TenantSettingsPage() {
       alert("Preencha todos os campos obrigatórios da filial.");
       return;
     }
+
+    const docVal = validateCpfCnpj(branchDocument);
+    if (!docVal.isValid) {
+      setBranchDocumentError(docVal.message || "CNPJ/CPF inválido.");
+      alert(docVal.message || "Por favor, informe um CNPJ ou CPF válido para a filial.");
+      return;
+    }
+    setBranchDocumentError(null);
+
+    const phoneVal = validatePhone(branchPhone);
+    if (!phoneVal.isValid) {
+      setBranchPhoneError(phoneVal.message || "Telefone inválido.");
+      alert(phoneVal.message || "Por favor, informe um WhatsApp comercial válido com DDD.");
+      return;
+    }
+    setBranchPhoneError(null);
+
     setCreatingBranch(true);
     try {
       const res = await fetchApi("/tenant/branches", {
@@ -704,11 +736,24 @@ export default function TenantSettingsPage() {
                   <input
                     type="text"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none focus:ring-1 focus:ring-[#181816]"
+                    onChange={(e) => {
+                      setPhone(maskPhone(e.target.value));
+                      if (phoneError) setPhoneError(null);
+                    }}
+                    placeholder="(11) 98888-7777"
+                    maxLength={15}
+                    className={`w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#FAF9F6] border ${
+                      phoneError ? "border-red-400 bg-red-50/20" : "border-[#E5E5E0]"
+                    } text-[#181816] focus:outline-none focus:ring-1 focus:ring-[#181816]`}
                     required
                   />
                 </div>
+                {phoneError && (
+                  <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    {phoneError}
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-2">
@@ -1462,10 +1507,22 @@ export default function TenantSettingsPage() {
                   type="text"
                   required
                   placeholder="Ex: 12.345.678/0002-99"
+                  maxLength={18}
                   value={branchDocument}
-                  onChange={(e) => setBranchDocument(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] font-mono focus:outline-none focus:border-[#181816]"
+                  onChange={(e) => {
+                    setBranchDocument(maskCpfCnpj(e.target.value));
+                    if (branchDocumentError) setBranchDocumentError(null);
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border ${
+                    branchDocumentError ? "border-red-400 bg-red-50/20" : "border-[#E5E5E0]"
+                  } text-[#181816] font-mono focus:outline-none focus:border-[#181816]`}
                 />
+                {branchDocumentError && (
+                  <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    {branchDocumentError}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1475,10 +1532,22 @@ export default function TenantSettingsPage() {
                     type="text"
                     required
                     placeholder="(11) 98888-7777"
+                    maxLength={15}
                     value={branchPhone}
-                    onChange={(e) => setBranchPhone(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none focus:border-[#181816]"
+                    onChange={(e) => {
+                      setBranchPhone(maskPhone(e.target.value));
+                      if (branchPhoneError) setBranchPhoneError(null);
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border ${
+                      branchPhoneError ? "border-red-400 bg-red-50/20" : "border-[#E5E5E0]"
+                    } text-[#181816] focus:outline-none focus:border-[#181816]`}
                   />
+                  {branchPhoneError && (
+                    <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      {branchPhoneError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
