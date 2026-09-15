@@ -31,8 +31,8 @@ export class OnboardingService implements OnApplicationBootstrap {
   // Configuração global de envio de WhatsApp (Evolution API / Webhook)
   private config: UpdateOnboardingConfigDto = {
     webhookUrl: process.env.WHATSAPP_WEBHOOK_URL || "",
-    apiUrl: process.env.EVOLUTION_API_URL || "",
-    apiKey: process.env.EVOLUTION_API_KEY || "",
+    apiUrl: process.env.EVOLUTION_API_URL || "http://evorix_whatsapp:8080",
+    apiKey: process.env.EVOLUTION_API_KEY || "ae00620eeb4dedf1d95d82c60e91d2db6b605d10a84177ae",
     instanceName: process.env.EVOLUTION_INSTANCE_NAME || "torxos",
   };
 
@@ -583,5 +583,72 @@ Dúvidas sobre o plano? Me responda aqui que te ajudo agora mesmo! 🤝`,
         text,
       }),
     });
+  }
+
+  /**
+   * Consulta o estado de conexão e obtém QR Code ou Pairing Code da Evolution API
+   */
+  async getWhatsAppConnectInfo() {
+    const apiUrl = (this.config.apiUrl || "http://evorix_whatsapp:8080").replace(/\/$/, "");
+    const apiKey = this.config.apiKey || "ae00620eeb4dedf1d95d82c60e91d2db6b605d10a84177ae";
+    const instance = this.config.instanceName || "torxos";
+
+    try {
+      // 1. Verifica estado de conexão
+      const stateRes = await fetch(`${apiUrl}/instance/connectionState/${instance}`, {
+        headers: { apikey: apiKey },
+      });
+      const stateData: any = await stateRes.json().catch(() => ({}));
+
+      const state = stateData?.instance?.state || "close";
+      if (state === "open") {
+        return {
+          connected: true,
+          state: "open",
+          instanceName: instance,
+          message: "WhatsApp conectado com sucesso!",
+        };
+      }
+
+      // 2. Se desconectado ou connecting, busca QR Code
+      const connectRes = await fetch(`${apiUrl}/instance/connect/${instance}`, {
+        headers: { apikey: apiKey },
+      });
+      const connectData: any = await connectRes.json().catch(() => ({}));
+
+      // Se a instância não existe ainda, tenta criar
+      if (connectRes.status === 404 || connectData?.status === 404) {
+        await fetch(`${apiUrl}/instance/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ instanceName: instance, qrcode: true, integration: "WHATSAPP-BAILEYS" }),
+        });
+      }
+
+      return {
+        connected: false,
+        state: state || "connecting",
+        instanceName: instance,
+        base64: connectData?.base64 || null,
+        code: connectData?.code || null,
+        pairingCode: connectData?.pairingCode || null,
+      };
+    } catch (err: any) {
+      return {
+        connected: false,
+        state: "error",
+        error: err.message,
+      };
+    }
+  }
+
+  /**
+   * Envia mensagem de teste direto via Evolution API
+   */
+  async testDirectMessage(phone: string, text?: string) {
+    const msg =
+      text ||
+      "🛠️ *Teste de Envio TorxOS (Ciclo da Bancada)*\n\nConexão com a Evolution API realizada com sucesso! Suas notificações automáticas já estão operacionais. 🚀";
+    return this.sendViaEvolutionApi(phone, msg);
   }
 }
