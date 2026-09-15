@@ -1,4 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "../../prisma/prisma.service";
 import {
   OnboardingStage,
@@ -24,7 +25,7 @@ export interface OnboardingLead {
 }
 
 @Injectable()
-export class OnboardingService {
+export class OnboardingService implements OnApplicationBootstrap {
   private readonly logger = new Logger(OnboardingService.name);
 
   // Configuração global de envio de WhatsApp (Evolution API / Webhook)
@@ -374,6 +375,179 @@ Dúvidas sobre o plano? Me responda aqui que te ajudo agora mesmo! 🤝`,
     });
 
     return text;
+  }
+
+  /**
+   * Executado logo após a inicialização da API: agenda uma verificação suave após 15 segundos
+   */
+  async onApplicationBootstrap() {
+    setTimeout(async () => {
+      try {
+        this.logger.log("[Onboarding Automation] Verificando réguas pendentes pós-inicialização...");
+        await this.processAutomaticOnboardingSequence();
+      } catch (err: any) {
+        this.logger.warn(`[Onboarding Automation] Erro na verificação inicial: ${err.message}`);
+      }
+    }, 15000);
+  }
+
+  /**
+   * Cron diário executado automaticamente às 09:00 (horário de pico comercial)
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  async runDailyOnboardingAutomation() {
+    this.logger.log("[Onboarding Automation] Executando cron diário das 09:00...");
+    await this.processAutomaticOnboardingSequence();
+  }
+
+  /**
+   * Dispara o ciclo de automação sob demanda (ex: chamado pelo Admin ou API)
+   */
+  async triggerAutomationCycle() {
+    return await this.processAutomaticOnboardingSequence();
+  }
+
+  /**
+   * Processa a sequência automática de mensagens para todos os lojistas em Trial
+   */
+  async processAutomaticOnboardingSequence() {
+    const tenants = await this.prisma.tenant.findMany({
+      where: { isActive: true },
+      include: {
+        users: { where: { role: "ADMIN" }, take: 1 },
+      },
+    });
+
+    const now = new Date();
+    let sentCount = 0;
+    let skippedCount = 0;
+
+    for (const tenant of tenants) {
+      let settings: any = {};
+      try {
+        settings = typeof tenant.settings === "string" ? JSON.parse(tenant.settings) : tenant.settings || {};
+      } catch {
+        settings = {};
+      }
+
+      // Processar apenas lojas em teste grátis (TRIAL)
+      if (settings.subscription_status !== "TRIAL") {
+        continue;
+      }
+
+      const created = new Date(tenant.createdAt);
+      const diffMs = now.getTime() - created.getTime();
+      const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+      // Determinar qual estágio da régua corresponde aos dias de vida da loja
+      let targetStage: OnboardingStage | null = null;
+      if (diffDays >= 7) {
+        targetStage = OnboardingStage.D7_CONVERSION;
+      } else if (diffDays >= 5) {
+        targetStage = OnboardingStage.D5_TRIAL_EXPIRING;
+      } else if (diffDays >= 3) {
+        targetStage = OnboardingStage.D3_WHATSAPP_STATUS;
+      } else if (diffDays >= 1) {
+        targetStage = OnboardingStage.D1_FIRST_OS;
+      } else {
+        targetStage = OnboardingStage.D0_WELCOME;
+      }
+
+      // Lista de estágios já enviados para evitar mensagens repetidas
+      const sentStages: string[] = Array.isArray(settings.onboarding_stages_sent)
+        ? settings.onboarding_stages_sent
+        : [];
+
+      // Se este estágio já foi enviado anteriormente para este lojista, ignora
+      if (sentStages.includes(targetStage)) {
+        skippedCount++;
+        continue;
+      }
+
+      const owner = tenant.users[0];
+      const ownerName = owner?.name || "Lojista";
+      const plan = tenant.plan || "PRO";
+      const asaasInvoiceUrl = settings.asaas_invoice_url || "https://torxos.tech/lp";
+
+      const message = this.formatMessage(targetStage, {
+        nome: ownerName,
+        empresa: tenant.tradeName,
+        plano: plan,
+        diasRestantes: Math.max(0, 7 - diffDays),
+        linkAcesso: "https://torxos.tech/login",
+        linkFatura: asaasInvoiceUrl,
+      });
+
+      this.logger.log(
+        `[Onboarding Automation] Disparando ${targetStage} para loja ${tenant.tradeName} (${tenant.phone}) - Criada há ${diffDays} dias`
+      );
+
+      let dispatched = false;
+
+      // 1. Envio via Evolution API (Automático)
+      if (this.config.apiUrl && this.config.apiKey && tenant.phone) {
+        try {
+          const res = await this.sendViaEvolutionApi(tenant.phone, message);
+          if (res && res.ok) {
+            dispatched = true;
+          }
+        } catch (err: any) {
+          this.logger.warn(`[Onboarding Automation] Falha Evolution API (${tenant.tradeName}): ${err.message}`);
+        }
+      }
+
+      // 2. Envio via Webhook externo (n8n/Make se configurado)
+      if (this.config.webhookUrl) {
+        try {
+          await this.sendToWebhook({
+            event: `ONBOARDING_${targetStage}`,
+            tenantId: tenant.id,
+            phone: tenant.phone,
+            email: tenant.email,
+            ownerName,
+            companyName: tenant.tradeName,
+            plan,
+            stage: targetStage,
+            daysSinceCreation: diffDays,
+            message,
+          });
+          dispatched = true;
+        } catch (err: any) {
+          this.logger.warn(`[Onboarding Automation] Falha Webhook (${tenant.tradeName}): ${err.message}`);
+        }
+      }
+
+      // Marca o estágio como enviado no settings do tenant
+      sentStages.push(targetStage);
+      const updatedSettings = {
+        ...settings,
+        onboarding_stages_sent: sentStages,
+        last_onboarding_sent_at: now.toISOString(),
+      };
+
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: {
+          settings: JSON.stringify(updatedSettings),
+        },
+      });
+
+      sentCount++;
+
+      // Pausa estratégica de 2 segundos entre envios para preservar número do WhatsApp
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    this.logger.log(
+      `[Onboarding Automation] Ciclo concluído: ${sentCount} mensagens disparadas, ${skippedCount} lojistas já estavam em dia.`
+    );
+
+    return {
+      success: true,
+      sentCount,
+      skippedCount,
+      timestamp: now.toISOString(),
+    };
   }
 
   /**

@@ -684,83 +684,96 @@ export default function StockCatalogPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-[#1C1C1A] font-semibold mb-1">
-                    Preço de Custo (R$) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={costPrice}
-                    onChange={(e) => handleCostPriceChange(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-3 py-2 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[#1C1C1A] font-semibold mb-1 flex items-center justify-between">
-                    <span>Margem (%)</span>
-                    <span className="text-[9px] text-amber-800 bg-amber-100/70 px-1 py-0.2 rounded font-mono font-bold">Auto</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={profitMargin}
-                      onChange={(e) => handleProfitMarginChange(e.target.value)}
-                      placeholder="Ex: 100"
-                      className="w-full pl-3 pr-6 py-2 rounded-xl bg-[#F9F9F7] border border-amber-400/50 focus:border-amber-500 focus:outline-none text-[#1C1C1A] tabular-nums font-semibold"
-                    />
-                    <span className="absolute right-2 top-2 text-[#71716C] font-semibold text-xs pointer-events-none">%</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[#1C1C1A] font-semibold mb-1">
-                    Preço Balcão (R$) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={salePrice}
-                    onChange={(e) => handleSalePriceChange(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-3 py-2 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums font-bold text-emerald-800"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[#1C1C1A] font-semibold mb-1">
-                    {editingProduct ? "Saldo Estoque" : "Saldo Inicial"}
-                  </label>
-                  <input
-                    type="number"
-                    value={currentStock}
-                    onChange={(e) => setCurrentStock(e.target.value)}
-                    placeholder="1"
-                    className="w-full px-3 py-2 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.08)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Indicador em Tempo Real de Lucro Líquido Unitário */}
-              {parseFloat(costPrice) > 0 && parseFloat(salePrice) > 0 && (
-                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/60 flex items-center justify-between text-xs text-emerald-900 animate-in fade-in">
-                  <div className="flex items-center gap-1.5 font-medium">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                    <span>
-                      Lucro Bruto Unitário: <strong>{formatCurrency(parseFloat(salePrice) - parseFloat(costPrice))}</strong>
-                    </span>
-                  </div>
-                  <span className="font-mono font-bold text-emerald-800 text-[11px] bg-white px-2 py-0.5 rounded-md border border-emerald-200">
-                    +{profitMargin || (((parseFloat(salePrice) - parseFloat(costPrice)) / parseFloat(costPrice)) * 100).toFixed(1)}% Margem
+              {/* Container Destacado de Precificação & Margem de Lucro */}
+              <div className="p-3.5 rounded-2xl bg-[#FAF9F6] border border-amber-400/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#1C1C1A] flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span>Precificação & Margem de Lucro</span>
+                  </span>
+                  <span className="text-[10px] text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full font-semibold">
+                    Cálculo Inteligente Bidirecional
                   </span>
                 </div>
-              )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-[#1C1C1A] font-semibold mb-1 text-xs">
+                      Preço Custo (R$) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={costPrice}
+                      onChange={(e) => handleCostPriceChange(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[rgba(28,25,23,0.12)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[#1C1C1A] font-semibold mb-1 text-xs flex items-center justify-between">
+                      <span>Margem (%)</span>
+                      <span className="text-[9px] text-amber-900 bg-amber-200/80 px-1.5 py-0.2 rounded font-mono font-bold">Auto</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={profitMargin}
+                        onChange={(e) => handleProfitMarginChange(e.target.value)}
+                        placeholder="Ex: 100"
+                        className="w-full pl-3 pr-6 py-2 rounded-xl bg-white border-2 border-amber-400 focus:border-amber-500 focus:outline-none text-[#1C1C1A] tabular-nums font-bold text-amber-950"
+                      />
+                      <span className="absolute right-2 top-2 text-amber-800 font-bold text-xs pointer-events-none">%</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[#1C1C1A] font-semibold mb-1 text-xs">
+                      Preço Venda (R$) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={salePrice}
+                      onChange={(e) => handleSalePriceChange(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[rgba(28,25,23,0.12)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums font-bold text-emerald-800 text-sm"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[#1C1C1A] font-semibold mb-1 text-xs">
+                      {editingProduct ? "Saldo Estoque" : "Saldo Inicial"}
+                    </label>
+                    <input
+                      type="number"
+                      value={currentStock}
+                      onChange={(e) => setCurrentStock(e.target.value)}
+                      placeholder="1"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[rgba(28,25,23,0.12)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* Indicador em Tempo Real de Lucro Líquido Unitário */}
+                {parseFloat(costPrice) > 0 && parseFloat(salePrice) > 0 && (
+                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900 animate-in fade-in">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span>
+                        Lucro Bruto Unitário: <strong>{formatCurrency(parseFloat(salePrice) - parseFloat(costPrice))}</strong>
+                      </span>
+                    </div>
+                    <span className="font-mono font-bold text-emerald-800 text-[11px] bg-white px-2 py-0.5 rounded-md border border-emerald-200">
+                      +{profitMargin || (((parseFloat(salePrice) - parseFloat(costPrice)) / parseFloat(costPrice)) * 100).toFixed(1)}% Margem
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <div className="pt-2 flex justify-end gap-2.5">
                 <button

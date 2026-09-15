@@ -3,6 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "../../prisma/prisma.service";
 import { OnboardingService } from "../onboarding/onboarding.service";
+import { MailService } from "../mail/mail.service";
 import { LoginDto, RefreshTokenDto } from "./dto/login.dto";
 
 @Injectable()
@@ -11,6 +12,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private onboardingService: OnboardingService,
+    private mailService: MailService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -310,6 +312,19 @@ export class AuthService {
 
     // 7. Disparar Régua de Boas-Vindas D0 (WhatsApp / Webhook de Ativação)
     this.onboardingService.dispatchWelcomeD0(tenant, user).catch(() => {});
+
+    // 8. Disparar E-mail de Boas-Vindas com dados de acesso
+    this.mailService
+      .sendWelcomeEmail({
+        ownerName: user.name,
+        companyName: tenant.tradeName,
+        email: user.email,
+        password: dto.password,
+        loginUrl: "https://torxos.tech/login",
+      })
+      .catch((err) => {
+        console.error("[AuthService] Erro ao disparar e-mail de boas-vindas:", err?.message);
+      });
 
     return {
       message: "Empresa e gestor cadastrados com sucesso! Aproveite seus 7 dias de teste grátis.",

@@ -47,6 +47,8 @@ export default function CashFlowPage() {
   const [deletingBank, setDeletingBank] = useState<any>(null);
   const [isDeletingBank, setIsDeletingBank] = useState(false);
 
+  const [activeMovementTab, setActiveMovementTab] = useState<"SETTLED" | "PENDING">("SETTLED");
+
   // Helper: Identifica se a conta é do tipo Caixa (Gaveta/Balcão)
   const isCashAccount = (acc: any) => {
     if (!acc) return false;
@@ -66,11 +68,12 @@ export default function CashFlowPage() {
       // 1. Tenta carregar o relatório oficial consolidado
       const res = await fetchApi("/finance/reports/cash-flow");
       
-      // 2. Busca também a lista completa de títulos pendentes
+      // 2. Busca também a lista completa de títulos
       const transList = await fetchApi("/finance/transactions");
       
       if (Array.isArray(transList) && transList.length > 0) {
         const pending = transList.filter((t: any) => t.status === "PENDING" || !t.status);
+        const settled = transList.filter((t: any) => t.status === "SETTLED");
         const sumRec = pending
           .filter((t: any) => t.transactionType === "RECEIVABLE")
           .reduce((sum: number, t: any) => sum + Number(t.netAmount || 0), 0);
@@ -87,15 +90,17 @@ export default function CashFlowPage() {
           projectedFinalBalance: baseBal + sumRec - sumPay,
           accounts: res?.accounts || [],
           upcomingTransactions: pending,
+          settledTransactions: settled.length > 0 ? settled : (res?.recentSettledTransactions || []),
         });
       } else {
-        setData(res || {
-          currentTotalBalance: 0,
-          projectedReceivables: 0,
-          projectedPayables: 0,
-          projectedFinalBalance: 0,
-          accounts: [],
-          upcomingTransactions: [],
+        setData({
+          currentTotalBalance: res?.currentTotalBalance || 0,
+          projectedReceivables: res?.projectedReceivables || 0,
+          projectedPayables: res?.projectedPayables || 0,
+          projectedFinalBalance: res?.projectedFinalBalance || 0,
+          accounts: res?.accounts || [],
+          upcomingTransactions: res?.upcomingTransactions || [],
+          settledTransactions: res?.recentSettledTransactions || [],
         });
       }
     } catch (err) {
@@ -574,54 +579,144 @@ export default function CashFlowPage() {
         </div>
       )}
 
-      {/* Próximos Vencimentos */}
+      {/* Tabela de Movimentações (Extrato Realizado vs Previsão Futura) */}
       <div className="evorix-card p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-xs text-[#1C1C1A] uppercase tracking-wider flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[rgba(28,25,23,0.06)] pb-4">
+          <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-[#71716C]" strokeWidth={1.75} />
-            <span>Próximas Movimentações Agendadas</span>
-          </h3>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F3F3EF] text-[#71716C]">
-            {d.upcomingTransactions?.length || 0} pendente(s)
-          </span>
+            <h3 className="font-bold text-xs text-[#1C1C1A] uppercase tracking-wider">
+              Movimentações Financeiras
+            </h3>
+          </div>
+
+          {/* Abas Alternáveis: Realizado vs Previsto */}
+          <div className="inline-flex p-1 rounded-xl bg-[#F3F3EF] text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setActiveMovementTab("SETTLED")}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                activeMovementTab === "SETTLED"
+                  ? "bg-white text-[#181816] shadow-xs"
+                  : "text-[#71716C] hover:text-[#181816]"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Extrato Realizado (Caixa & Vendas)</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-[#FAF9F6] text-[#71716C]">
+                {d.settledTransactions?.length || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveMovementTab("PENDING")}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                activeMovementTab === "PENDING"
+                  ? "bg-white text-[#181816] shadow-xs"
+                  : "text-[#71716C] hover:text-[#181816]"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span>Previsão Futura (A Receber / Pagar)</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-[#FAF9F6] text-[#71716C]">
+                {d.upcomingTransactions?.length || 0}
+              </span>
+            </button>
+          </div>
         </div>
 
+        {/* Conteúdo da Aba Ativa */}
         <div className="space-y-2">
-          {(!d.upcomingTransactions || d.upcomingTransactions.length === 0) ? (
-            <div className="p-8 text-center bg-[#F9F9F7] rounded-xl border border-dashed border-[rgba(28,25,23,0.12)]">
-              <p className="text-xs text-[#71716C] font-medium">
-                Nenhum título a pagar ou receber pendente no período.
-              </p>
-              <Link
-                href="/financeiro/titulos"
-                className="mt-2 inline-block text-xs font-bold text-[#1C1C1A] hover:underline"
-              >
-                + Cadastrar novo título agora
-              </Link>
-            </div>
-          ) : (
-            d.upcomingTransactions.map((t: any, i: number) => {
-              const isRec = t.transactionType === "RECEIVABLE";
-              return (
-                <div
-                  key={t.id || i}
-                  className="p-3.5 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.06)] flex items-center justify-between text-xs hover:border-[rgba(28,25,23,0.15)] transition"
+          {activeMovementTab === "SETTLED" ? (
+            (!d.settledTransactions || d.settledTransactions.length === 0) ? (
+              <div className="p-8 text-center bg-[#F9F9F7] rounded-xl border border-dashed border-[rgba(28,25,23,0.12)]">
+                <p className="text-xs text-[#71716C] font-medium">
+                  Nenhuma entrada ou saída realizada no caixa ainda.
+                </p>
+                <Link
+                  href="/vendas/pdv"
+                  className="mt-2 inline-block text-xs font-bold text-[#1C1C1A] hover:underline"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-lg border ${isRec ? "bg-[#DCFCE7] text-emerald-800 border-[#BBF7D0]" : "bg-[#FEE2E2] text-rose-800 border-[#FECACA]"}`}>
-                      {isRec ? <ArrowDownLeft className="w-3.5 h-3.5" strokeWidth={2} /> : <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2} />}
+                  Ir para o PDV de Vendas →
+                </Link>
+              </div>
+            ) : (
+              d.settledTransactions.map((t: any, i: number) => {
+                const isRec = t.transactionType === "RECEIVABLE";
+                const accName = t.bankAccount?.name || "Caixa Balcão";
+                return (
+                  <div
+                    key={t.id || i}
+                    className="p-3.5 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.06)] flex items-center justify-between text-xs hover:border-[rgba(28,25,23,0.15)] transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-1.5 rounded-lg border ${isRec ? "bg-[#DCFCE7] text-emerald-800 border-[#BBF7D0]" : "bg-[#FEE2E2] text-rose-800 border-[#FECACA]"}`}>
+                        {isRec ? <ArrowDownLeft className="w-3.5 h-3.5" strokeWidth={2} /> : <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-[#1C1C1A]">{t.description}</p>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">
+                            Liquidado
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-[#71716C] flex items-center gap-2 mt-0.5">
+                          <span className="font-mono tabular-nums">Data: {formatDate(t.settlementDate || t.competenceDate || t.createdAt)}</span>
+                          <span>•</span>
+                          <span className="font-medium text-[#444441]">Conta: {accName}</span>
+                          {t.paymentMethod && (
+                            <>
+                              <span>•</span>
+                              <span className="uppercase text-[#71716C]">{t.paymentMethod}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-[#1C1C1A]">{t.description}</p>
-                      <span className="text-[10px] text-[#71716C] font-mono tabular-nums">Vencimento: {formatDate(t.dueDate)}</span>
-                    </div>
+                    <span className={`font-bold tabular-nums text-sm ${isRec ? "text-emerald-800" : "text-rose-700"}`}>
+                      {isRec ? "+" : "-"}{formatCurrency(t.netAmount || t.grossAmount)}
+                    </span>
                   </div>
-                  <span className={`font-bold tabular-nums ${isRec ? "text-emerald-800" : "text-rose-700"}`}>
-                    {isRec ? "+" : "-"}{formatCurrency(t.netAmount)}
-                  </span>
-                </div>
-              );
-            })
+                );
+              })
+            )
+          ) : (
+            (!d.upcomingTransactions || d.upcomingTransactions.length === 0) ? (
+              <div className="p-8 text-center bg-[#F9F9F7] rounded-xl border border-dashed border-[rgba(28,25,23,0.12)]">
+                <p className="text-xs text-[#71716C] font-medium">
+                  Nenhum título a pagar ou receber pendente no período.
+                </p>
+                <Link
+                  href="/financeiro/titulos"
+                  className="mt-2 inline-block text-xs font-bold text-[#1C1C1A] hover:underline"
+                >
+                  + Cadastrar novo título agora
+                </Link>
+              </div>
+            ) : (
+              d.upcomingTransactions.map((t: any, i: number) => {
+                const isRec = t.transactionType === "RECEIVABLE";
+                return (
+                  <div
+                    key={t.id || i}
+                    className="p-3.5 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.06)] flex items-center justify-between text-xs hover:border-[rgba(28,25,23,0.15)] transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-1.5 rounded-lg border ${isRec ? "bg-[#DCFCE7] text-emerald-800 border-[#BBF7D0]" : "bg-[#FEE2E2] text-rose-800 border-[#FECACA]"}`}>
+                        {isRec ? <ArrowDownLeft className="w-3.5 h-3.5" strokeWidth={2} /> : <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2} />}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[#1C1C1A]">{t.description}</p>
+                        <span className="text-[10px] text-[#71716C] font-mono tabular-nums">Vencimento: {formatDate(t.dueDate)}</span>
+                      </div>
+                    </div>
+                    <span className={`font-bold tabular-nums ${isRec ? "text-emerald-800" : "text-rose-700"}`}>
+                      {isRec ? "+" : "-"}{formatCurrency(t.netAmount)}
+                    </span>
+                  </div>
+                );
+              })
+            )
           )}
         </div>
       </div>

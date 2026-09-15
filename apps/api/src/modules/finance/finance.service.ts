@@ -289,6 +289,20 @@ export class FinanceService {
 
     const projectedFinalBalance = currentTotalBalance + projectedReceivables - projectedPayables;
 
+    const settledTransactions = await this.prisma.financialTransaction.findMany({
+      where: {
+        tenantId,
+        status: TransactionStatus.SETTLED,
+      },
+      orderBy: [{ settlementDate: "desc" }, { createdAt: "desc" }],
+      take: 30,
+      include: {
+        client: { select: { name: true } },
+        chartOfAccount: { select: { name: true, code: true } },
+        bankAccount: { select: { name: true } },
+      },
+    });
+
     return {
       currentTotalBalance,
       projectedReceivables,
@@ -296,7 +310,8 @@ export class FinanceService {
       projectedFinalBalance,
       accounts: bankAccounts,
       pendingCount: pendingTransactions.length,
-      upcomingTransactions: pendingTransactions.slice(0, 10),
+      upcomingTransactions: pendingTransactions.slice(0, 15),
+      recentSettledTransactions: settledTransactions,
     };
   }
 

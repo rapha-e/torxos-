@@ -60,4 +60,14 @@ export class OnboardingController {
   dispatchStageMessage(@Body() dto: DispatchOnboardingMessageDto) {
     return this.onboardingService.dispatchStageMessage(dto);
   }
+
+  @Post("trigger-cycle")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Executa imediatamente o ciclo de envio automático da régua de onboarding para todos os lojistas em Trial",
+  })
+  @ApiResponse({ status: 200, description: "Ciclo de automação executado com sucesso." })
+  triggerCycle() {
+    return this.onboardingService.triggerAutomationCycle();
+  }
 }

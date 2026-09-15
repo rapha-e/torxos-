@@ -73,11 +73,43 @@ export default function PdvPage() {
   const [newProdCategory, setNewProdCategory] = useState("Acessórios");
   const [newProdBarcode, setNewProdBarcode] = useState("");
   const [newProdCostPrice, setNewProdCostPrice] = useState("");
+  const [newProdProfitMargin, setNewProdProfitMargin] = useState("");
   const [newProdSalePrice, setNewProdSalePrice] = useState("");
   const [newProdStock, setNewProdStock] = useState("10");
   const [newProdShelf, setNewProdShelf] = useState("Balcão Central");
   const [autoAddToCart, setAutoAddToCart] = useState(true);
   const [savingProduct, setSavingProduct] = useState(false);
+
+  // Handlers de Cálculo Bidirecional de Margem no PDV
+  const handleNewProdCostPriceChange = (val: string) => {
+    setNewProdCostPrice(val);
+    const c = parseFloat(val);
+    const m = parseFloat(newProdProfitMargin);
+    if (!isNaN(c) && !isNaN(m) && c > 0) {
+      setNewProdSalePrice((c * (1 + m / 100)).toFixed(2));
+    } else if (!isNaN(c) && c > 0 && parseFloat(newProdSalePrice) > 0) {
+      const s = parseFloat(newProdSalePrice);
+      setNewProdProfitMargin((((s - c) / c) * 100).toFixed(1));
+    }
+  };
+
+  const handleNewProdProfitMarginChange = (val: string) => {
+    setNewProdProfitMargin(val);
+    const m = parseFloat(val);
+    const c = parseFloat(newProdCostPrice);
+    if (!isNaN(c) && !isNaN(m) && c > 0) {
+      setNewProdSalePrice((c * (1 + m / 100)).toFixed(2));
+    }
+  };
+
+  const handleNewProdSalePriceChange = (val: string) => {
+    setNewProdSalePrice(val);
+    const s = parseFloat(val);
+    const c = parseFloat(newProdCostPrice);
+    if (!isNaN(c) && !isNaN(s) && c > 0) {
+      setNewProdProfitMargin((((s - c) / c) * 100).toFixed(1));
+    }
+  };
 
   // Modal de Comprovante Térmico Concluído
   const [completedSale, setCompletedSale] = useState<any | null>(null);
@@ -960,23 +992,41 @@ export default function PdvPage() {
                 </div>
               </div>
 
-              {/* Preços e Estoque */}
-              <div className="grid grid-cols-3 gap-2.5">
+              {/* Preços, Margem de Lucro e Estoque */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#1C1C1A]">Preço Custo (R$)</label>
+                  <label className="text-xs font-bold text-[#1C1C1A]">Custo (R$)</label>
                   <input
                     type="number"
                     step="0.10"
                     placeholder="15.00"
                     value={newProdCostPrice}
-                    onChange={(e) => setNewProdCostPrice(e.target.value)}
+                    onChange={(e) => handleNewProdCostPriceChange(e.target.value)}
                     className="w-full px-2.5 py-2 text-xs font-mono bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-lg focus:outline-none text-[#1C1C1A]"
                   />
                 </div>
 
                 <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1C1A] flex items-center justify-between">
+                    <span>Margem (%)</span>
+                    <span className="text-[9px] text-amber-800 bg-amber-100/70 px-1 py-0.2 rounded font-mono font-bold">Auto</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.5"
+                      placeholder="100"
+                      value={newProdProfitMargin}
+                      onChange={(e) => handleNewProdProfitMarginChange(e.target.value)}
+                      className="w-full pl-2.5 pr-5 py-2 text-xs font-mono font-semibold bg-[#F9F9F7] border border-amber-400/60 rounded-lg focus:outline-none text-[#1C1C1A]"
+                    />
+                    <span className="absolute right-1.5 top-2 text-[#71716C] font-semibold text-xs pointer-events-none">%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
                   <label className="text-xs font-bold text-[#1C1C1A]">
-                    Preço Venda (R$) <span className="text-rose-500">*</span>
+                    Venda (R$) <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -984,7 +1034,7 @@ export default function PdvPage() {
                     required
                     placeholder="65.00"
                     value={newProdSalePrice}
-                    onChange={(e) => setNewProdSalePrice(e.target.value)}
+                    onChange={(e) => handleNewProdSalePriceChange(e.target.value)}
                     className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-lg focus:outline-none text-emerald-800"
                   />
                 </div>
@@ -1001,6 +1051,18 @@ export default function PdvPage() {
                   />
                 </div>
               </div>
+
+              {/* Indicador de Lucro Bruto Unitário em Tempo Real */}
+              {parseFloat(newProdCostPrice) > 0 && parseFloat(newProdSalePrice) > 0 && (
+                <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200/70 flex items-center justify-between text-xs text-emerald-950 animate-in fade-in">
+                  <span className="font-medium">
+                    Lucro Bruto Unitário: <strong>R$ {(parseFloat(newProdSalePrice) - parseFloat(newProdCostPrice)).toFixed(2)}</strong>
+                  </span>
+                  <span className="font-mono font-bold text-emerald-800 text-[11px] bg-white px-2 py-0.5 rounded border border-emerald-200">
+                    +{newProdProfitMargin || (((parseFloat(newProdSalePrice) - parseFloat(newProdCostPrice)) / parseFloat(newProdCostPrice)) * 100).toFixed(1)}% Margem
+                  </span>
+                </div>
+              )}
 
               {/* Localização no Balcão */}
               <div className="space-y-1">

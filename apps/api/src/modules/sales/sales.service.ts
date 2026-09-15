@@ -135,7 +135,7 @@ export class SalesService {
         this.logger.log(`[PDV BAIXA ESTOQUE] Venda #${saleNumber}: Produto ${p.product.name}, Baixa de ${p.quantity} un. Saldo restante: ${newStock}`);
       }
 
-      // 5. Integração Financeira: Cria Receita Liquidada (SETTLED) no Caixa
+      // 5. Integração Financeira: Cria Receita Liquidada (SETTLED) no Caixa e incrementa saldo
       let chartAccount = await tx.chartOfAccount.findFirst({
         where: { tenantId, code: "3.1.02" },
       });
@@ -151,12 +151,52 @@ export class SalesService {
         });
       }
 
+      // Localiza a conta de Caixa (Gaveta / Balcão) para liquidar a entrada imediata
+      let cashAccount = await tx.bankAccount.findFirst({
+        where: {
+          tenantId,
+          isActive: true,
+          OR: [
+            { accountType: "CASH" },
+            { accountType: "CASH_REGISTER" },
+            { name: { contains: "Caixa" } },
+            { name: { contains: "caixa" } },
+            { name: { contains: "Gaveta" } },
+            { name: { contains: "Balcão" } },
+          ],
+        },
+      });
+
+      if (!cashAccount) {
+        cashAccount = await tx.bankAccount.create({
+          data: {
+            tenantId,
+            name: "Caixa Gaveta Balcão",
+            accountType: "CASH",
+            initialBalance: 0,
+            currentBalance: 0,
+            isActive: true,
+          },
+        });
+      }
+
+      // Incrementa atomicamente o saldo do Caixa com o valor líquido da venda
+      await tx.bankAccount.update({
+        where: { id: cashAccount.id },
+        data: {
+          currentBalance: {
+            increment: netTotal,
+          },
+        },
+      });
+
       const today = new Date();
       await tx.financialTransaction.create({
         data: {
           tenantId,
           transactionType: TransactionType.RECEIVABLE,
           chartOfAccountId: chartAccount.id,
+          bankAccountId: cashAccount.id,
           clientId: dto.clientId || null,
           saleId: sale.id,
           description: `Venda de Balcão #${saleNumber} (${sale.items.length} itens)`,
