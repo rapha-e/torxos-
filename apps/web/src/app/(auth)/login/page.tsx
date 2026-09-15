@@ -149,11 +149,19 @@ function LoginForm() {
           </button>
         </form>
 
-        <div className="text-center text-xs text-[#71716C]">
-          Ainda não tem cadastro?{" "}
-          <a href="/cadastrar" className="font-semibold text-[#1C1C1A] hover:underline">
-            Criar empresa (7 dias grátis)
-          </a>
+        <div className="text-center space-y-2 text-xs text-[#71716C]">
+          <div>
+            Ainda não tem cadastro?{" "}
+            <a href="/cadastrar" className="font-semibold text-[#1C1C1A] hover:underline">
+              Criar empresa (7 dias grátis)
+            </a>
+          </div>
+          <div>
+            <a href="/lp" className="text-[11px] text-amber-700 hover:text-amber-800 hover:underline inline-flex items-center gap-1 font-medium">
+              <span>Conhecer todos os recursos e planos do TorxOS</span>
+              <span>→</span>
+            </a>
+          </div>
         </div>
 
         <div className="text-center text-[10px] text-[#A1A19B]">
