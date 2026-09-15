@@ -14,6 +14,11 @@ module.exports = {
           DEFAULT: "#FFFFFF",
           muted: "#F3F3EF",
           hover: "#FAFAF8",
+          base: "#0A0A0C",
+          card: "#121216",
+          overlay: "#18181F",
+          border: "rgba(255, 255, 255, 0.08)",
+          "border-highlight": "rgba(255, 255, 255, 0.16)",
         },
         border: {
           DEFAULT: "rgba(28, 25, 23, 0.07)",
@@ -22,14 +27,17 @@ module.exports = {
           darker: "#DDDCD6",
         },
         content: {
-          primary: "#1C1C1A",
-          secondary: "#71716C",
-          muted: "#A1A19B",
+          primary: "#F4F4F5",   // zinc-100 (Alto contraste para títulos/corpo)
+          secondary: "#A1A1AA", // zinc-400 (Mínimo 4.5:1 sobre o fundo)
+          muted: "#71717A",     // zinc-500 (Apenas metadados secundários)
         },
         brand: {
           DEFAULT: "#181816",
           hover: "#2D2D29",
           muted: "#EBEAE5",
+          amber: "#F59E0B",
+          "amber-hover": "#D97706",
+          "amber-muted": "rgba(245, 158, 11, 0.12)",
         },
         emerald: {
           DEFAULT: "#15803D",

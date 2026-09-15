@@ -29,10 +29,11 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { TorxLogo } from "@/components/ui/torxos-logo";
+import { ComparisonSection } from "@/components/lp/ComparisonSection";
+import { FaqAccordion } from "@/components/lp/FaqAccordion";
 
 export default function LandingPage() {
   const router = useRouter();
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Função para rastrear evento no Meta Pixel e Google Tag Manager
   const trackConversion = (eventName: string, planSelected?: string) => {
@@ -63,10 +64,6 @@ export default function LandingPage() {
     router.push(`/cadastrar?plan=${planName}`);
   };
 
-  const toggleFaq = (index: number) => {
-    setOpenFaq(openFaq === index ? null : index);
-  };
-
   return (
     <div className="min-h-screen bg-[#0C0C0E] text-[#EDEDED] font-sans selection:bg-amber-500 selection:text-black">
       {/* Top Banner Informativo B2B Premium & Discreto */}
@@ -79,10 +76,10 @@ export default function LandingPage() {
         </span>
         <button
           onClick={() => handleCtaClick("PRO")}
-          className="text-zinc-100 hover:text-white underline underline-offset-4 ml-1 cursor-pointer font-semibold hidden sm:inline-flex items-center gap-1 transition"
+          className="text-zinc-100 hover:text-white underline underline-offset-4 ml-1 cursor-pointer font-semibold hidden sm:inline-flex items-center gap-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber rounded-sm"
         >
           <span>Criar conta</span>
-          <ArrowRight className="w-3 h-3 text-zinc-400" />
+          <ArrowRight aria-hidden="true" className="w-3 h-3 text-zinc-400" />
         </button>
       </div>
 
@@ -106,22 +103,26 @@ export default function LandingPage() {
             <a href="#solucoes" className="hover:text-white transition">Solução</a>
             <a href="#comparativo" className="hover:text-white transition">Comparativo</a>
             <a href="#precos" className="hover:text-white transition">Planos</a>
+            <Link href="/fundadores" className="text-[#E2A336] hover:text-amber-300 transition font-semibold flex items-center gap-1">
+              <span>Programa Fundador</span>
+              <span className="text-[9px] font-mono bg-[#E2A336]/15 border border-[#E2A336]/30 px-1.5 py-0.2 rounded">10 vagas</span>
+            </Link>
             <a href="#faq" className="hover:text-white transition">Dúvidas</a>
           </nav>
 
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="text-xs font-medium text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg transition"
+              className="text-xs font-medium text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
             >
               Entrar
             </Link>
             <button
               onClick={() => handleCtaClick("PRO")}
-              className="px-3.5 py-2 rounded-xl bg-[#EDEDEC] hover:bg-white text-[#121214] font-semibold text-xs tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_2px_rgba(0,0,0,0.4)] border border-white/20 transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[#EDEDEC] hover:bg-white text-[#121214] font-semibold text-xs tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_2px_rgba(0,0,0,0.4)] border border-white/20 transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
             >
               <span>Testar 7 Dias Grátis</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -161,17 +162,17 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
             <button
               onClick={() => handleCtaClick("PRO")}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-semibold text-sm -tracking-[0.01em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_8px_24px_-6px_rgba(226,163,54,0.3)] border border-[#EBB048]/60 transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-semibold text-sm -tracking-[0.01em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_8px_24px_-6px_rgba(226,163,54,0.3)] border border-[#EBB048]/60 transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
             >
               <span>Começar 7 Dias Grátis</span>
-              <ArrowRight className="w-4 h-4 text-[#14120E]" />
+              <ArrowRight aria-hidden="true" className="w-4 h-4 text-[#14120E]" />
             </button>
             <a
               href="#recursos"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 border border-white/[0.08] hover:border-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] font-semibold text-sm transition flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 border border-white/[0.08] hover:border-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] font-semibold text-sm transition flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
             >
               <span>Ver como funciona</span>
-              <ChevronRight className="w-4 h-4 text-zinc-400" />
+              <ChevronRight aria-hidden="true" className="w-4 h-4 text-zinc-400" />
             </a>
           </div>
 
@@ -320,24 +321,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Prova Social em Números com Números em Mono Estilizado */}
-      <section className="py-14 border-y border-white/[0.08] bg-white/[0.015]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <div>
-            <div className="text-3xl sm:text-4xl font-bold text-white font-mono tracking-tight tabular-nums">+1.250</div>
-            <div className="text-xs text-zinc-400 mt-1 font-medium">Assistências Técnicas no Brasil</div>
+      {/* Transparência e Seleção Inicial — Programa Fundador (100% Honesto) */}
+      <section className="py-12 border-y border-white/[0.08] bg-white/[0.015]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="text-left space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#E2A336]/10 border border-[#E2A336]/25 text-[11px] font-mono font-semibold text-[#E2A336]">
+              <span>FASE DE ACESSO ANTECIPADO</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Estamos selecionando as 10 primeiras assistências técnicas.
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl font-normal">
+              Acesso em condições exclusivas para um pequeno grupo de lojistas participarem diretamente da evolução do TorxOS.
+            </p>
           </div>
-          <div>
-            <div className="text-3xl sm:text-4xl font-bold text-zinc-100 font-mono tracking-tight tabular-nums">+480.000</div>
-            <div className="text-xs text-zinc-400 mt-1 font-medium">Ordens de Serviço Concluídas</div>
-          </div>
-          <div>
-            <div className="text-3xl sm:text-4xl font-bold text-white font-mono tracking-tight tabular-nums">35%</div>
-            <div className="text-xs text-zinc-400 mt-1 font-medium">Aumento Médio de Lucro Líquido</div>
-          </div>
-          <div>
-            <div className="text-3xl sm:text-4xl font-bold text-zinc-100 font-mono tracking-tight tabular-nums">4.9 / 5.0</div>
-            <div className="text-xs text-zinc-400 mt-1 font-medium">Avaliação dos Lojistas</div>
+
+          <div className="flex items-center gap-4 shrink-0">
+            <Link
+              href="/fundadores"
+              className="px-5 py-3 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-bold text-xs shadow-md transition active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            >
+              <span>Conhecer o Programa Fundador</span>
+              <ArrowRight className="w-4 h-4 text-[#14120E]" />
+            </Link>
           </div>
         </div>
       </section>
@@ -479,72 +485,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Tabela Comparativa */}
-      <section id="comparativo" className="py-24 max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-        <div className="text-center space-y-3 max-w-3xl mx-auto">
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-zinc-400 bg-white/[0.04] px-3 py-1 rounded-full border border-white/[0.08]">
-            Comparativo Direto
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white -tracking-[0.03em] tracking-tight">
-            Por que trocar o caderno ou sistemas antigos pelo TorxOS?
-          </h2>
-        </div>
-
-        <div className="rounded-2xl p-px bg-gradient-to-b from-white/15 via-white/[0.05] to-white/[0.02] shadow-xl overflow-hidden">
-          <div className="rounded-[15px] bg-[#121215] overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/[0.08] text-zinc-400 text-[11px] uppercase tracking-wider">
-                  <th className="py-4 px-5">Funcionalidade / Capacidade</th>
-                  <th className="py-4 px-4 text-center text-zinc-500 font-medium">Caderno / Planilhas</th>
-                  <th className="py-4 px-4 text-center text-zinc-500 font-medium">Sistemas Antigos</th>
-                  <th className="py-4 px-4 text-center text-zinc-100 font-bold bg-white/[0.04] border-x border-white/[0.06]">
-                    TorxOS PRO
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04] text-zinc-300 font-normal">
-                <tr>
-                  <td className="py-4 px-5 font-semibold text-white">Acompanhamento de OS pelo cliente via WhatsApp</td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center bg-white/[0.02] border-x border-white/[0.06] text-emerald-400 font-semibold"><Check className="w-4 h-4 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-5 font-semibold text-white">Previsão de Ruptura de Estoque com IA</td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center bg-white/[0.02] border-x border-white/[0.06] text-emerald-400 font-semibold"><Check className="w-4 h-4 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-5 font-semibold text-white">Cálculo de Margem Líquida e DRE em Tempo Real</td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center text-zinc-500">Complexo</td>
-                  <td className="py-4 px-4 text-center bg-white/[0.02] border-x border-white/[0.06] text-emerald-400 font-semibold"><Check className="w-4 h-4 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-5 font-semibold text-white">Impressão Térmica de OS com QR Code</td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center text-zinc-400"><Check className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center bg-white/[0.02] border-x border-white/[0.06] text-emerald-400 font-semibold"><Check className="w-4 h-4 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-5 font-semibold text-white">Mentor Virtual com IA para Orçamentos e Gestão</td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center bg-white/[0.02] border-x border-white/[0.06] text-emerald-400 font-semibold"><Check className="w-4 h-4 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-5 font-semibold text-white">Interface Rápida e 100% na Nuvem (sem instalar nada)</td>
-                  <td className="py-4 px-4 text-center text-zinc-600"><X className="w-4 h-4 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center text-zinc-500">Lento / Local</td>
-                  <td className="py-4 px-4 text-center bg-white/[0.02] border-x border-white/[0.06] text-emerald-400 font-semibold"><Check className="w-4 h-4 mx-auto" /></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      {/* Comparativo Responsivo Desktop + Mobile */}
+      <ComparisonSection />
 
       {/* Planos e Preços (Pricing Funnel - Bento Top-Light & Contenção Cromática) */}
       <section id="precos" className="py-24 bg-white/[0.015] border-t border-white/[0.08]">
@@ -572,7 +514,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-baseline gap-1 font-mono">
                     <span className="text-sm text-zinc-400">R$</span>
-                    <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight tabular-nums">97</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight tabular-nums">79</span>
                     <span className="text-xs text-zinc-400">/mês</span>
                   </div>
                   <ul className="space-y-2.5 text-xs text-zinc-300 pt-3 border-t border-white/[0.06] font-normal">
@@ -600,7 +542,7 @@ export default function LandingPage() {
                 </div>
                 <button
                   onClick={() => handleCtaClick("STARTER")}
-                  className="w-full py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 border border-white/[0.08] hover:border-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] font-semibold text-xs transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 border border-white/[0.08] hover:border-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] font-semibold text-xs transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber cursor-pointer"
                 >
                   Começar no Starter
                 </button>
@@ -609,7 +551,7 @@ export default function LandingPage() {
 
             {/* Plano PRO (Destaque VIP - Top-Light Dourado Refinado & Botão Sólido com Inner Shadow) */}
             <div className="rounded-2xl p-px bg-gradient-to-b from-[#E2A336]/40 via-white/[0.08] to-white/[0.02] shadow-2xl relative transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_48px_-12px_rgba(226,163,54,0.18)] hover:from-[#E2A336]/60">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#E2A336]/15 border border-[#E2A336]/40 text-[#E2A336] font-mono text-[10px] font-semibold uppercase tracking-wider">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#E2A336]/15 border border-[#E2A336]/40 text-[#E2A336] font-mono text-xs font-semibold uppercase tracking-wider">
                 Mais Escolhido
               </div>
               <div className="rounded-[15px] bg-[#141418] p-7 flex flex-col justify-between space-y-6 h-full">
@@ -620,39 +562,39 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-baseline gap-1 font-mono">
                     <span className="text-sm text-zinc-400">R$</span>
-                    <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight tabular-nums">197</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight tabular-nums">139</span>
                     <span className="text-xs text-zinc-400">/mês</span>
                   </div>
                   <ul className="space-y-2.5 text-xs text-zinc-300 pt-3 border-t border-white/[0.06] font-normal">
                     <li className="flex items-center gap-2 font-medium text-white">
-                      <Check className="w-4 h-4 text-[#E2A336] shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-[#E2A336] shrink-0" />
                       <span>Tudo do Starter +</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#E2A336] shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-[#E2A336] shrink-0" />
                       <span>Até 5 usuários / técnicos</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#E2A336] shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-[#E2A336] shrink-0" />
                       <span>Consulta de OS Online com QR Code</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#E2A336] shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-[#E2A336] shrink-0" />
                       <span>Previsão de Ruptura de Estoque</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#E2A336] shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-[#E2A336] shrink-0" />
                       <span>DRE & Conciliação Pix Automática</span>
                     </li>
                     <li className="flex items-center gap-2 font-medium text-zinc-200">
-                      <Sparkles className="w-4 h-4 text-[#E2A336] shrink-0" />
+                      <Sparkles aria-hidden="true" className="w-4 h-4 text-[#E2A336] shrink-0" />
                       <span>AI Mentor de Gestão Integrado</span>
                     </li>
                   </ul>
                 </div>
                 <button
                   onClick={() => handleCtaClick("PRO")}
-                  className="w-full py-3.5 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-semibold text-xs -tracking-[0.01em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_6px_20px_-4px_rgba(226,163,54,0.3)] border border-[#EBB048]/60 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E2A336]/50 cursor-pointer"
+                  className="w-full py-3.5 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-semibold text-xs -tracking-[0.01em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_6px_20px_-4px_rgba(226,163,54,0.3)] border border-[#EBB048]/60 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber cursor-pointer"
                 >
                   Testar Plano PRO 7 Dias Grátis
                 </button>
@@ -669,39 +611,39 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-baseline gap-1 font-mono">
                     <span className="text-sm text-zinc-400">R$</span>
-                    <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight tabular-nums">347</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight tabular-nums">249</span>
                     <span className="text-xs text-zinc-400">/mês</span>
                   </div>
                   <ul className="space-y-2.5 text-xs text-zinc-300 pt-3 border-t border-white/[0.06] font-normal">
                     <li className="flex items-center gap-2 font-medium text-white">
-                      <Check className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span>Tudo do PRO +</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span>Usuários Ilimitados</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span>Multi-Unidades / Filiais</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span>Comissionamento Avançado de Técnicos</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span>Gerente de Contas Dedicado</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span>Suporte VIP Prioritário no WhatsApp</span>
                     </li>
                   </ul>
                 </div>
                 <button
                   onClick={() => handleCtaClick("ENTERPRISE")}
-                  className="w-full py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 border border-white/[0.08] hover:border-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] font-semibold text-xs transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 border border-white/[0.08] hover:border-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] font-semibold text-xs transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber cursor-pointer"
                 >
                   Começar no Enterprise
                 </button>
@@ -711,176 +653,43 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Depoimentos / Prova Social Real com Fotos Reais Monocromáticas/Duotone & Hover Elevation */}
-      <section className="py-24 max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-zinc-400 bg-white/[0.04] px-3 py-1 rounded-full border border-white/[0.08]">
-            Depoimentos Reais
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white -tracking-[0.03em] tracking-tight">
-            O que dizem os donos de bancada que usam o TorxOS
+      {/* Bloco Transparente de Convite aos Primeiros Casos de Sucesso */}
+      <section className="py-20 max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="rounded-2xl p-8 sm:p-10 bg-gradient-to-b from-[#E2A336]/15 via-white/[0.02] to-transparent border border-[#E2A336]/30 text-center space-y-6 shadow-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E2A336]/10 border border-[#E2A336]/25 text-xs font-mono font-semibold text-[#E2A336]">
+            <Sparkles aria-hidden="true" className="w-3.5 h-3.5" />
+            <span>CONSTRUÇÃO COLABORATIVA</span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-white -tracking-[0.03em] max-w-2xl mx-auto leading-snug">
+            Em vez de inventar depoimentos, queremos construir os primeiros cases reais com você.
           </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Depoimento 1 */}
-          <div className="rounded-2xl p-px bg-gradient-to-b from-white/15 via-white/[0.05] to-white/[0.02] shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.8)] hover:from-white/25">
-            <div className="rounded-[15px] bg-[#121215] p-6 space-y-4 h-full flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex text-[#E2A336] gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-[#E2A336] text-[#E2A336]" />
-                  ))}
-                </div>
-                <p className="text-xs text-zinc-300 leading-relaxed italic font-normal">
-                  "Antes eu usava planilha e caderno. Toda semana sumia tela de iPhone ou bateria. Com o TorxOS, o controle de estoque é cirúrgico e os clientes adoram receber o link do conserto pelo WhatsApp."
-                </p>
-              </div>
-              <div className="pt-3 border-t border-white/[0.06] flex items-center gap-3">
-                <img
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80"
-                  alt="Marcos Vinícius"
-                  className="w-10 h-10 rounded-full object-cover grayscale contrast-125 border border-white/15 ring-2 ring-white/5 shadow-inner shrink-0"
-                />
-                <div className="min-w-0">
-                  <div className="font-semibold text-white text-xs flex items-center gap-1.5 truncate">
-                    <span>Marcos Vinícius</span>
-                    <span className="text-[10px] font-mono text-zinc-400 bg-white/[0.06] px-1.5 py-0.2 rounded border border-white/10 font-normal shrink-0">
-                      ✓ Ativo
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-zinc-500 truncate">iFix Celulares • Campinas/SP</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Depoimento 2 */}
-          <div className="rounded-2xl p-px bg-gradient-to-b from-white/15 via-white/[0.05] to-white/[0.02] shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.8)] hover:from-white/25">
-            <div className="rounded-[15px] bg-[#121215] p-6 space-y-4 h-full flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex text-[#E2A336] gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-[#E2A336] text-[#E2A336]" />
-                  ))}
-                </div>
-                <p className="text-xs text-zinc-300 leading-relaxed italic font-normal">
-                  "O AI Mentor me ajudou a parar de cobrar barato nos reparos de placa. Hoje sei exatamente meu custo e aumentei meu faturamento em quase 40% em 3 meses de uso."
-                </p>
-              </div>
-              <div className="pt-3 border-t border-white/[0.06] flex items-center gap-3">
-                <img
-                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80"
-                  alt="Rodrigo Albuquerque"
-                  className="w-10 h-10 rounded-full object-cover grayscale contrast-125 border border-white/15 ring-2 ring-white/5 shadow-inner shrink-0"
-                />
-                <div className="min-w-0">
-                  <div className="font-semibold text-white text-xs flex items-center gap-1.5 truncate">
-                    <span>Rodrigo Albuquerque</span>
-                    <span className="text-[10px] font-mono text-zinc-400 bg-white/[0.06] px-1.5 py-0.2 rounded border border-white/10 font-normal shrink-0">
-                      ✓ Ativo
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-zinc-500 truncate">TechPoint Assistência • Belo Horizonte/MG</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Depoimento 3 */}
-          <div className="rounded-2xl p-px bg-gradient-to-b from-white/15 via-white/[0.05] to-white/[0.02] shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.8)] hover:from-white/25">
-            <div className="rounded-[15px] bg-[#121215] p-6 space-y-4 h-full flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex text-[#E2A336] gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-[#E2A336] text-[#E2A336]" />
-                  ))}
-                </div>
-                <p className="text-xs text-zinc-300 leading-relaxed italic font-normal">
-                  "A impressão térmica com QR Code para colar no aparelho é sensacional. O cliente não fica ligando para saber se o aparelho está pronto, ele olha no link do QR Code direto."
-                </p>
-              </div>
-              <div className="pt-3 border-t border-white/[0.06] flex items-center gap-3">
-                <img
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80"
-                  alt="Camila Fagundes"
-                  className="w-10 h-10 rounded-full object-cover grayscale contrast-125 border border-white/15 ring-2 ring-white/5 shadow-inner shrink-0"
-                />
-                <div className="min-w-0">
-                  <div className="font-semibold text-white text-xs flex items-center gap-1.5 truncate">
-                    <span>Camila Fagundes</span>
-                    <span className="text-[10px] font-mono text-zinc-400 bg-white/[0.06] px-1.5 py-0.2 rounded border border-white/10 font-normal shrink-0">
-                      ✓ Ativo
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-zinc-500 truncate">SmartLab Consertos • Curitiba/PR</div>
-                </div>
-              </div>
-            </div>
+          <p className="text-xs sm:text-sm text-zinc-300 max-w-xl mx-auto font-normal leading-relaxed">
+            Estamos no momento de validar e refinar o TorxOS lado a lado com quem vive a bancada todos os dias. 
+            Participe das 10 primeiras assistências do Programa Fundador e tenha canal direto com nossos fundadores e engenheiros.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/fundadores"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-bold text-xs tracking-tight shadow-md transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
+            >
+              <span>Quero participar do Programa Fundador (10 vagas)</span>
+              <ArrowRight aria-hidden="true" className="w-4 h-4 text-[#14120E]" />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* FAQ Interativo */}
-      <section id="faq" className="py-24 max-w-4xl mx-auto px-4 sm:px-6 space-y-12">
+      {/* FAQ Interativo Acessível com WAI-ARIA */}
+      <section id="faq" className="py-24 max-w-4xl mx-auto px-4 sm:px-6 space-y-10">
         <div className="text-center space-y-3">
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-zinc-400 bg-white/[0.04] px-3 py-1 rounded-full border border-white/[0.08]">
+          <span className="text-xs font-mono font-semibold uppercase tracking-wider text-brand-amber bg-brand-amber-muted px-3 py-1 rounded-full border border-brand-amber/20">
             Tire Suas Dúvidas
           </span>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white -tracking-[0.03em] tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-content-primary tracking-tight">
             Perguntas Frequentes
           </h2>
         </div>
-
-        <div className="space-y-3">
-          {[
-            {
-              q: "Preciso cadastrar cartão de crédito para testar?",
-              a: "Não! Você se cadastra em menos de 1 minuto apenas com os dados da sua loja e já tem acesso total ao sistema por 7 dias grátis. Sem pegadinhas.",
-            },
-            {
-              q: "Funciona em qualquer computador ou impressora?",
-              a: "Sim. O TorxOS roda 100% na nuvem no navegador (Google Chrome, Edge, Safari) no Windows, Mac ou celular. Suporta qualquer impressora térmica padrão (58mm e 80mm) e impressoras convencionais A4.",
-            },
-            {
-              q: "Posso importar os dados do meu sistema antigo?",
-              a: "Sim, oferecemos suporte para importação de planilhas de clientes e produtos/peças para que você não precise começar do zero.",
-            },
-            {
-              q: "Como meus clientes consultam o status da OS pelo celular?",
-              a: "Ao imprimir a entrada da OS ou enviar pelo WhatsApp, é gerado um link seguro exclusivo com QR Code. O cliente acessa, vê as fotos do aparelho, laudo e pode até aprovar o orçamento.",
-            },
-            {
-              q: "Se eu não gostar, como cancelo?",
-              a: "O cancelamento é feito com 1 clique direto no painel, sem multas, contratos de fidelidade ou burocracia.",
-            },
-          ].map((item, index) => (
-            <div
-              key={index}
-              className="rounded-xl p-px bg-gradient-to-b from-white/10 via-white/[0.04] to-white/[0.01] overflow-hidden transition"
-            >
-              <div className="rounded-[11px] bg-[#121215]">
-                <button
-                  type="button"
-                  onClick={() => toggleFaq(index)}
-                  className="w-full p-4 text-left flex items-center justify-between text-xs font-semibold text-white hover:text-zinc-300 cursor-pointer"
-                >
-                  <span>{item.q}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${
-                      openFaq === index ? "rotate-180 text-zinc-200" : ""
-                    }`}
-                  />
-                </button>
-                {openFaq === index && (
-                  <div className="px-4 pb-4 text-xs text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-2 font-normal">
-                    {item.a}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <FaqAccordion />
       </section>
 
       {/* CTA Final Refinado - Contenção Cromática & Inner Shadow */}
@@ -890,15 +699,15 @@ export default function LandingPage() {
             Pronto para transformar sua assistência técnica em uma máquina de lucro?
           </h2>
           <p className="text-sm text-zinc-400 max-w-xl mx-auto font-normal">
-            Junte-se a mais de 1.200 assistências em todo o país. Comece agora seus 7 dias de teste sem nenhum compromisso.
+            Seja uma das 10 primeiras assistências a transformar sua bancada. Comece agora seus 7 dias de teste ou participe do Programa Fundador.
           </p>
           <div className="pt-2">
             <button
               onClick={() => handleCtaClick("PRO")}
-              className="px-8 py-4 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-semibold text-sm -tracking-[0.01em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_10px_30px_-8px_rgba(226,163,54,0.35)] border border-[#EBB048]/60 transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mx-auto"
+              className="px-8 py-4 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-semibold text-sm -tracking-[0.01em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_10px_30px_-8px_rgba(226,163,54,0.35)] border border-[#EBB048]/60 transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mx-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
             >
               <span>Criar Minha Conta Grátis (7 Dias)</span>
-              <ArrowRight className="w-4 h-4 text-[#14120E]" />
+              <ArrowRight aria-hidden="true" className="w-4 h-4 text-[#14120E]" />
             </button>
           </div>
         </div>
@@ -914,50 +723,25 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6">
-            <Link href="/login" className="hover:text-zinc-300 transition">
+            <Link href="/login" className="hover:text-zinc-300 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber rounded-sm">
               Acesso ao Sistema
             </Link>
-            <Link href="/cadastrar" className="hover:text-zinc-300 transition">
+            <Link href="/cadastrar" className="hover:text-zinc-300 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber rounded-sm">
               Criar Conta
             </Link>
             <a
               href="https://wa.me/5561992295814?text=Olá! Gostaria de tirar dúvidas sobre o sistema TorxOS"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-zinc-300 transition flex items-center gap-1"
+              className="hover:text-zinc-300 transition flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber rounded-sm"
             >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+              <MessageSquare aria-hidden="true" className="w-3.5 h-3.5 text-emerald-400" />
               WhatsApp de Atendimento
             </a>
           </div>
         </div>
       </footer>
 
-      {/* Ponto de Contato Flutuante Discreto: Suporte & Migração de Dados (Número oculto visualmente) */}
-      <a
-        href="https://wa.me/5561992295814?text=Olá!%20Estou%20na%20página%20do%20TorxOS%20e%20gostaria%20de%20tirar%20dúvidas%20técnicas%20sobre%20migração%20de%20dados%20e%20implantação."
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => trackConversion("ContactWhatsAppMigration")}
-        aria-label="Fale no WhatsApp sobre migração de dados e suporte técnico"
-        className="fixed bottom-6 right-6 z-50 group flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-[#121215]/95 backdrop-blur-md border border-white/[0.12] hover:border-emerald-500/40 shadow-[0_8px_30px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_12px_36px_rgba(16,185,129,0.15)]"
-      >
-        <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 group-hover:bg-emerald-500/20 transition">
-          <MessageCircle className="w-4 h-4 fill-emerald-400/20" />
-          <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-          </span>
-        </div>
-        <div className="flex flex-col text-left pr-1">
-          <span className="text-[11px] font-semibold text-white -tracking-[0.01em] group-hover:text-emerald-300 transition">
-            Dúvidas sobre Migração?
-          </span>
-          <span className="text-[9px] text-zinc-400">
-            Falar no WhatsApp
-          </span>
-        </div>
-      </a>
     </div>
   );
 }
