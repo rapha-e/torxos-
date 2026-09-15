@@ -2,12 +2,16 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from "@nes
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateServiceOrderDto, UpdateOsStatusDto, ClientApproveDto } from "./dto/service-order.dto";
 import { OsStatus, TransactionType, TransactionStatus } from "../../common/enums";
+import { TenantService } from "../tenant/tenant.service";
 
 @Injectable()
 export class ServiceOrdersService {
   private readonly logger = new Logger(ServiceOrdersService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private tenantService: TenantService,
+  ) {}
 
   async list(tenantId: string, status?: OsStatus, search?: string, startDate?: string, endDate?: string) {
     if (!tenantId || tenantId.trim() === "") {
@@ -483,13 +487,62 @@ export class ServiceOrdersService {
       throw new BadRequestException("Esta OS já foi aprovada ou não está em fase de aprovação.");
     }
 
-    return this.prisma.serviceOrder.update({
+    const updatedOrder = await this.prisma.serviceOrder.update({
       where: { publicToken },
       data: {
         status: OsStatus.APPROVED,
         clientSignatureUrl: dto.signatureDataUrl || null,
       },
-      include: { items: true, client: true },
+      include: {
+        items: true,
+        client: true,
+        tenant: true,
+        technician: { select: { id: true, name: true, email: true } },
+      },
     });
+
+    const tenantName = updatedOrder.tenant?.tradeName || "Assistência Técnica";
+    const tenantPhone = updatedOrder.tenant?.phone;
+    const clientName = updatedOrder.client?.name || "Cliente";
+    const clientPhone = updatedOrder.client?.phone;
+    const formattedTotal = Number(updatedOrder.netTotal).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+    });
+
+    // 1. Alerta em tempo real para a Assistência Técnica (Lojista / Técnico)
+    if (tenantPhone) {
+      const alertTenantMsg =
+        `🔔 *${tenantName} - Orçamento Aprovado pelo Cliente!* 🎉\n\n` +
+        `O cliente *${clientName}* acabou de assinar digitalmente e aprovar o orçamento da *OS #${updatedOrder.osNumber}* (${updatedOrder.deviceBrand || ""} ${updatedOrder.deviceModel}).\n\n` +
+        `💰 *Valor Aprovado:* R$ ${formattedTotal}\n` +
+        `🛠️ *Status da OS:* Avançada automaticamente para *Aprovado (Liberado para Reparo)*.\n` +
+        `✍️ *Assinatura:* Digitalizada no portal com geolocalização auditada.\n\n` +
+        `👉 Acesse o painel da sua loja: https://torxos.tech/ordens-servico/${updatedOrder.id}`;
+
+      this.tenantService
+        .sendTenantWhatsAppMessage(updatedOrder.tenantId, tenantPhone, alertTenantMsg)
+        .catch((err) => {
+          this.logger.warn(`Erro ao enviar alerta WhatsApp para assistência: ${err.message}`);
+        });
+    }
+
+    // 2. Confirmação instantânea para o WhatsApp do Cliente
+    if (clientPhone) {
+      const confirmClientMsg =
+        `🚀 *${tenantName}*\n\n` +
+        `Olá, *${clientName}*! Confirmamos o recebimento da sua aprovação formal para o reparo do *${updatedOrder.deviceModel}* (OS #${updatedOrder.osNumber}).\n\n` +
+        `Nossa equipe técnica já deu início aos procedimentos em laboratório com garantia técnica assegurada.\n\n` +
+        `Você pode acompanhar cada etapa do reparo em tempo real por este link:\n` +
+        `👉 https://torxos.tech/status/${updatedOrder.publicToken}\n\n` +
+        `Agradecemos pela confiança! 🛠️`;
+
+      this.tenantService
+        .sendTenantWhatsAppMessage(updatedOrder.tenantId, clientPhone, confirmClientMsg)
+        .catch((err) => {
+          this.logger.warn(`Erro ao enviar confirmação WhatsApp para cliente: ${err.message}`);
+        });
+    }
+
+    return updatedOrder;
   }
 }

@@ -36,6 +36,10 @@ import {
   GitFork,
   ArrowRightLeft,
   MapPin,
+  MessageSquare,
+  QrCode,
+  RefreshCw,
+  Send,
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { ImageUploader } from "@/components/ui/image-uploader";
@@ -56,10 +60,25 @@ interface TeamMember {
 }
 
 export default function TenantSettingsPage() {
-  const [activeTab, setActiveTab] = useState<"COMPANY" | "WARRANTY" | "TEAM" | "SUBSCRIPTION" | "BRANCHES">("COMPANY");
+  const [activeTab, setActiveTab] = useState<"COMPANY" | "WARRANTY" | "TEAM" | "SUBSCRIPTION" | "BRANCHES" | "WHATSAPP">("COMPANY");
   const [loading, setLoading] = useState<boolean>(true);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // WhatsApp Multi-Tenant por Assistência
+  const [whatsappData, setWhatsappData] = useState<{
+    connected: boolean;
+    state?: string;
+    instanceName?: string;
+    tradeName?: string;
+    base64?: string | null;
+    code?: string | null;
+    pairingCode?: string | null;
+    message?: string;
+  } | null>(null);
+  const [loadingWhatsapp, setLoadingWhatsapp] = useState<boolean>(false);
+  const [testWhatsappPhone, setTestWhatsappPhone] = useState<string>("");
+  const [sendingTestWhatsapp, setSendingTestWhatsapp] = useState<boolean>(false);
 
   // Gestão Multi-Filiais & Matriz (Enterprise)
   const [branchesData, setBranchesData] = useState<{
@@ -472,6 +491,73 @@ export default function TenantSettingsPage() {
     }
   };
 
+  const loadWhatsAppStatus = async () => {
+    setLoadingWhatsapp(true);
+    try {
+      const data = await fetchApi("/tenant/whatsapp/status");
+      if (data) {
+        setWhatsappData(data);
+        if (phone && !testWhatsappPhone) {
+          setTestWhatsappPhone(phone);
+        }
+      }
+    } catch (err: any) {
+      console.warn("Erro ao carregar status do WhatsApp:", err);
+    } finally {
+      setLoadingWhatsapp(false);
+    }
+  };
+
+  const handleConnectWhatsApp = async () => {
+    setLoadingWhatsapp(true);
+    try {
+      const res = await fetchApi("/tenant/whatsapp/connect", { method: "POST" });
+      if (res) {
+        setWhatsappData(res);
+      }
+    } catch (err: any) {
+      alert("Erro ao gerar QR Code do WhatsApp: " + (err?.message || "Ocorreu um erro."));
+    } finally {
+      setLoadingWhatsapp(false);
+    }
+  };
+
+  const handleDisconnectWhatsApp = async () => {
+    if (!confirm("Deseja realmente desconectar o WhatsApp da sua assistência técnica?\n\nOs envios automáticos de mensagens da sua loja serão pausados ou utilizarão o canal de contingência da plataforma.")) {
+      return;
+    }
+    setLoadingWhatsapp(true);
+    try {
+      const res = await fetchApi("/tenant/whatsapp/disconnect", { method: "POST" });
+      alert(res?.message || "WhatsApp desconectado com sucesso.");
+      loadWhatsAppStatus();
+    } catch (err: any) {
+      alert("Erro ao desconectar WhatsApp: " + (err?.message || "Ocorreu um erro."));
+    } finally {
+      setLoadingWhatsapp(false);
+    }
+  };
+
+  const handleSendTestWhatsApp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testWhatsappPhone.trim()) {
+      alert("Informe um número de WhatsApp com DDD para envio do teste.");
+      return;
+    }
+    setSendingTestWhatsapp(true);
+    try {
+      const res = await fetchApi("/tenant/whatsapp/test", {
+        method: "POST",
+        body: JSON.stringify({ phone: testWhatsappPhone }),
+      });
+      alert(res?.message || "Mensagem de teste enviada com sucesso! Verifique seu WhatsApp.");
+    } catch (err: any) {
+      alert("Falha no envio de teste: " + (err?.message || "Ocorreu um erro."));
+    } finally {
+      setSendingTestWhatsapp(false);
+    }
+  };
+
   const loadBranches = async () => {
     setLoadingBranches(true);
     try {
@@ -667,6 +753,25 @@ export default function TenantSettingsPage() {
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-500/20">
               ENT 🔒
             </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("WHATSAPP");
+            loadWhatsAppStatus();
+          }}
+          className={`px-4 py-2.5 text-xs font-medium border-b-2 transition-all flex items-center gap-2 ${
+            activeTab === "WHATSAPP"
+              ? "border-[#181816] text-[#181816] font-semibold"
+              : "border-transparent text-[#787774] hover:text-[#181816]"
+          }`}
+        >
+          <MessageSquare className="w-4 h-4 text-emerald-600" />
+          WhatsApp da Loja
+          {whatsappData?.connected && (
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           )}
         </button>
       </div>
@@ -1454,6 +1559,235 @@ export default function TenantSettingsPage() {
             )}
           </div>
         </PlanGate>
+      )}
+
+      {/* =================================================================== */}
+      {/* ABA 6: WHATSAPP DA LOJA & NOTIFICAÇÕES AUTOMÁTICAS                 */}
+      {/* =================================================================== */}
+      {activeTab === "WHATSAPP" && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Card Principal de Conexão */}
+          <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#EBEBE8] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EBEBE8] pb-5">
+              <div className="flex items-center gap-3">
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${
+                  whatsappData?.connected
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-[#FAF9F6] text-[#181816] border-[#EBEBE8]"
+                }`}>
+                  <MessageSquare className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-[#181816]">
+                      WhatsApp Exclusivo da Loja
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
+                      Gateway Evolution API
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#787774] mt-0.5">
+                    Conecte o número de atendimento da sua assistência técnica para disparos automáticos aos clientes.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={loadWhatsAppStatus}
+                  disabled={loadingWhatsapp}
+                  className="px-3.5 py-2 rounded-xl bg-[#FAF9F6] hover:bg-[#F3F3EF] border border-[#E5E5E0] text-xs font-semibold text-[#181816] flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                  title="Atualizar status da conexão"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#787774] ${loadingWhatsapp ? "animate-spin" : ""}`} />
+                  Verificar Status
+                </button>
+              </div>
+            </div>
+
+            {loadingWhatsapp && !whatsappData && (
+              <div className="py-12 text-center space-y-3">
+                <div className="w-8 h-8 border-2 border-[#181816] border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-xs text-[#787774] font-medium">Consultando gateway de mensagens da sua loja...</p>
+              </div>
+            )}
+
+            {/* ESTADO 1: WHATSAPP CONECTADO */}
+            {whatsappData?.connected ? (
+              <div className="space-y-6">
+                <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-emerald-950">
+                          WhatsApp Conectado e Operacional
+                        </h4>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          Online
+                        </span>
+                      </div>
+                      <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                        Sua loja está com a instância <strong>{whatsappData.instanceName}</strong> ativa. Todas as mensagens de abertura de OS, laudos, orçamentos e avisos de aparelho pronto estão sendo enviadas com a identidade da <strong>{tradeName || "sua empresa"}</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDisconnectWhatsApp}
+                    className="px-3.5 py-2 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold shrink-0 transition cursor-pointer"
+                  >
+                    Desconectar Aparelho
+                  </button>
+                </div>
+
+                {/* Teste de Disparo Real */}
+                <div className="p-6 rounded-2xl bg-[#FAF9F6] border border-[#EBEBE8] space-y-4">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#181816] flex items-center gap-2">
+                      <Send className="w-3.5 h-3.5 text-emerald-600" />
+                      Testar Envio de Notificação da Loja
+                    </h4>
+                    <p className="text-xs text-[#787774] mt-0.5">
+                      Envie uma mensagem instantânea para o seu próprio número e valide a identidade visual da sua assistência.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSendTestWhatsApp} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        placeholder="Seu WhatsApp com DDD (Ex: 61 99229-5814)"
+                        value={testWhatsappPhone}
+                        onChange={(e) => setTestWhatsappPhone(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#E5E5E0] text-xs text-[#181816] focus:outline-none focus:border-[#181816]"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={sendingTestWhatsapp}
+                      className="px-5 py-2.5 rounded-xl bg-[#181816] hover:bg-[#282824] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition cursor-pointer disabled:opacity-50"
+                    >
+                      <Send className="w-3.5 h-3.5 text-emerald-400" />
+                      {sendingTestWhatsapp ? "Disparando..." : "Disparar Mensagem de Teste"}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              /* ESTADO 2: WHATSAPP DESCONECTADO (GERAR QR CODE) */
+              <div className="space-y-6">
+                <div className="p-5 rounded-2xl bg-[#FAF9F6] border border-[#EBEBE8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-[#181816]">
+                      Nenhum Aparelho Conectado Nesta Unidade
+                    </h4>
+                    <p className="text-xs text-[#787774] mt-1 leading-relaxed">
+                      Pareie o WhatsApp da sua assistência técnica para que os clientes recebam notificações com a sua marca e logotipo. Enquanto não parear, o sistema usará o canal seguro de contingência com o nome da sua loja.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleConnectWhatsApp}
+                    disabled={loadingWhatsapp}
+                    className="px-5 py-2.5 rounded-xl bg-[#181816] hover:bg-[#282824] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm shrink-0 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <QrCode className="w-4 h-4 text-emerald-400" />
+                    {loadingWhatsapp ? "Gerando QR Code..." : "Gerar QR Code de Conexão"}
+                  </button>
+                </div>
+
+                {/* Exibição do QR Code quando disponível */}
+                {whatsappData?.base64 && (
+                  <div className="p-6 sm:p-8 rounded-2xl bg-white border border-[#EBEBE8] shadow-sm flex flex-col md:flex-row items-center gap-8 animate-in fade-in">
+                    <div className="flex flex-col items-center p-4 rounded-2xl bg-white border-2 border-dashed border-[#E5E5E0] shadow-xs">
+                      <img
+                        src={whatsappData.base64}
+                        alt="QR Code WhatsApp da Loja"
+                        className="w-56 h-56 object-contain rounded-xl"
+                      />
+                      <span className="text-[11px] font-semibold text-[#787774] mt-2 flex items-center gap-1.5">
+                        <RefreshCw className="w-3 h-3 text-emerald-600 animate-spin" />
+                        Aguardando leitura no celular...
+                      </span>
+                    </div>
+
+                    <div className="flex-1 space-y-4 text-xs">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          Passo a Passo
+                        </span>
+                        <h4 className="text-base font-bold text-[#181816]">
+                          Como escanear no seu smartphone:
+                        </h4>
+                      </div>
+
+                      <ol className="space-y-2.5 text-[#555552] pl-4 list-decimal leading-relaxed">
+                        <li>Abra o aplicativo do <strong>WhatsApp</strong> no celular comercial da loja.</li>
+                        <li>Toque em <strong>Configurações</strong> (no iPhone) ou nos <strong>três pontinhos</strong> (no Android).</li>
+                        <li>Selecione <strong>Aparelhos Conectados</strong> ➔ <strong>Conectar um aparelho</strong>.</li>
+                        <li>Aponte a câmera para o <strong>QR Code</strong> ao lado.</li>
+                      </ol>
+
+                      {whatsappData.pairingCode && (
+                        <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                          <span className="text-[11px] font-medium text-[#787774] block">Código de Pareamento por Número:</span>
+                          <span className="font-mono text-base font-bold text-[#181816] tracking-widest">{whatsappData.pairingCode}</span>
+                        </div>
+                      )}
+
+                      <div className="pt-2 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={loadWhatsAppStatus}
+                          className="px-4 py-2 rounded-xl bg-[#181816] hover:bg-[#282824] text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Já Escaneei (Concluir)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleConnectWhatsApp}
+                          className="px-3.5 py-2 rounded-xl border border-[#E5E5E0] text-xs font-medium text-[#787774] hover:bg-[#FAF9F6] transition cursor-pointer"
+                        >
+                          Gerar Novo Código
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Demonstração da Identidade da Loja nas Mensagens */}
+            <div className="pt-6 border-t border-[#EBEBE8] space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#787774]">
+                Modelo da Mensagem Recebida pelo Cliente
+              </h4>
+              <div className="max-w-md p-4 rounded-2xl bg-[#EFEAE2] border border-[#DDD6CB] shadow-xs text-xs space-y-2 font-sans text-[#111B21]">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                  <Store className="w-3.5 h-3.5" />
+                  <span>{tradeName || "Sua Assistência Técnica"}</span>
+                </div>
+                <p className="leading-relaxed">
+                  Olá, <strong>Carlos</strong>! Concluímos o laudo do seu <strong>iPhone 13 Pro</strong> (OS #1042). O orçamento detalhado já está disponível para você aprovar em 1 clique pelo link seguro:
+                </p>
+                <div className="p-2.5 rounded-xl bg-white/90 border border-black/5 text-[11px] text-[#0066CC] underline">
+                  👉 https://torxos.tech/status/os-1042-xyz
+                </div>
+                <p className="text-[11px] text-[#667781] pt-1">
+                  Valor total: <strong>R$ 380,00</strong> com garantia legal de 90 dias assegurada.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* =================================================================== */}

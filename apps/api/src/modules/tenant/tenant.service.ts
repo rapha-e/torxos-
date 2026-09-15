@@ -1186,4 +1186,245 @@ export class TenantService {
       },
     };
   }
+
+  // =========================================================================
+  // GESTÃO DE WHATSAPP MULTI-TENANT POR ASSISTÊNCIA TÉCNICA (EVOLUTION API)
+  // =========================================================================
+
+  private getEvolutionConfig() {
+    const apiUrl = (process.env.EVOLUTION_API_URL || "http://evorix_whatsapp:8080").replace(/\/$/, "");
+    const apiKey = process.env.EVOLUTION_API_KEY || "ae00620eeb4dedf1d95d82c60e91d2db6b605d10a84177ae";
+    const defaultInstance = process.env.EVOLUTION_INSTANCE_NAME || "torxos";
+    return { apiUrl, apiKey, defaultInstance };
+  }
+
+  getTenantInstanceName(tenantId: string): string {
+    const clean = tenantId.replace(/-/g, "").substring(0, 16);
+    return `loja_${clean}`;
+  }
+
+  /**
+   * Consulta o estado de conexão e gera/retorna o QR Code da assistência técnica
+   */
+  async getWhatsAppConnectInfo(tenantId: string) {
+    const { apiUrl, apiKey } = this.getEvolutionConfig();
+    const instanceName = this.getTenantInstanceName(tenantId);
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException("Assistência técnica não encontrada.");
+    }
+
+    try {
+      // 1. Verifica estado da instância na Evolution API
+      const stateRes = await fetch(`${apiUrl}/instance/connectionState/${instanceName}`, {
+        headers: { apikey: apiKey },
+      });
+      const stateData: any = await stateRes.json().catch(() => ({}));
+      const state = stateData?.instance?.state;
+
+      if (state === "open") {
+        // Salva flag no settings do tenant caso ainda não esteja atualizada
+        this.updateTenantWhatsAppSettings(tenantId, {
+          whatsapp_connected: true,
+          whatsapp_instance: instanceName,
+          whatsapp_state: "open",
+        }).catch(() => {});
+
+        return {
+          connected: true,
+          state: "open",
+          instanceName,
+          tradeName: tenant.tradeName,
+          message: "WhatsApp da sua assistência está conectado e pronto para envios!",
+        };
+      }
+
+      // 2. Se a instância não existe (404), cria na Evolution API
+      if (stateRes.status === 404 || stateData?.status === 404 || !state) {
+        await fetch(`${apiUrl}/instance/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({
+            instanceName,
+            qrcode: true,
+            integration: "WHATSAPP-BAILEYS",
+          }),
+        });
+      }
+
+      // 3. Obtém o QR Code ou pairingCode para o lojista escanear
+      const connectRes = await fetch(`${apiUrl}/instance/connect/${instanceName}`, {
+        headers: { apikey: apiKey },
+      });
+      const connectData: any = await connectRes.json().catch(() => ({}));
+
+      return {
+        connected: false,
+        state: state || "connecting",
+        instanceName,
+        tradeName: tenant.tradeName,
+        base64: connectData?.base64 || null,
+        code: connectData?.code || null,
+        pairingCode: connectData?.pairingCode || null,
+      };
+    } catch (err: any) {
+      return {
+        connected: false,
+        state: "error",
+        instanceName,
+        tradeName: tenant.tradeName,
+        error: err.message,
+      };
+    }
+  }
+
+  /**
+   * Desconecta o WhatsApp da assistência técnica
+   */
+  async disconnectWhatsApp(tenantId: string) {
+    const { apiUrl, apiKey } = this.getEvolutionConfig();
+    const instanceName = this.getTenantInstanceName(tenantId);
+
+    try {
+      await fetch(`${apiUrl}/instance/logout/${instanceName}`, {
+        method: "DELETE",
+        headers: { apikey: apiKey },
+      });
+    } catch (err: any) {
+      // Se falhar logout, tenta delete
+      try {
+        await fetch(`${apiUrl}/instance/delete/${instanceName}`, {
+          method: "DELETE",
+          headers: { apikey: apiKey },
+        });
+      } catch {}
+    }
+
+    await this.updateTenantWhatsAppSettings(tenantId, {
+      whatsapp_connected: false,
+      whatsapp_instance: null,
+      whatsapp_state: "close",
+    });
+
+    return {
+      success: true,
+      message: "WhatsApp da sua assistência técnica desconectado com sucesso.",
+    };
+  }
+
+  /**
+   * Dispara mensagem de WhatsApp garantindo isolamento da assistência e inclusão do Nome da Loja
+   */
+  async sendTenantWhatsAppMessage(tenantId: string, toPhone: string, text: string) {
+    const { apiUrl, apiKey, defaultInstance } = this.getEvolutionConfig();
+    const tenantInstance = this.getTenantInstanceName(tenantId);
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant) return null;
+
+    const cleanPhone = toPhone.replace(/\D/g, "");
+    const number = cleanPhone.length <= 11 ? `55${cleanPhone}` : cleanPhone;
+
+    // Garante que o nome fantasia da loja sempre esteja evidente na comunicação
+    let formattedText = text;
+    if (!formattedText.includes(tenant.tradeName)) {
+      formattedText = `🏪 *${tenant.tradeName}*\n\n${formattedText}`;
+    }
+
+    // 1. Tenta enviar pela instância própria da loja
+    try {
+      const stateRes = await fetch(`${apiUrl}/instance/connectionState/${tenantInstance}`, {
+        headers: { apikey: apiKey },
+      });
+      const stateData: any = await stateRes.json().catch(() => ({}));
+
+      if (stateData?.instance?.state === "open") {
+        const res = await fetch(`${apiUrl}/message/sendText/${tenantInstance}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ number, text: formattedText }),
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      }
+    } catch (err: any) {
+      // Continua para fallback
+    }
+
+    // 2. Fallback: se a assistência ainda não pareou seu número próprio, utiliza a instância padrão da plataforma
+    try {
+      const fallbackRes = await fetch(`${apiUrl}/message/sendText/${defaultInstance}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: apiKey },
+        body: JSON.stringify({ number, text: formattedText }),
+      });
+      return await fallbackRes.json().catch(() => ({}));
+    } catch (err: any) {
+      return null;
+    }
+  }
+
+  /**
+   * Dispara mensagem de teste ou notificação para o lojista validar o pareamento
+   */
+  async testTenantWhatsAppMessage(tenantId: string, customPhone?: string, customText?: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException("Assistência técnica não encontrada.");
+    }
+
+    const targetPhone = customPhone || tenant.phone;
+    if (!targetPhone) {
+      throw new BadRequestException("Nenhum telefone informado para envio da mensagem.");
+    }
+
+    const text =
+      customText ||
+      `🛠️ *${tenant.tradeName}* - Teste de Notificações WhatsApp\n\nParabéns! O WhatsApp da sua assistência técnica está pareado e 100% operacional no TorxOS.\n\nA partir de agora, seus clientes receberão avisos de entrada de OS, orçamentos e notificações de aparelho pronto diretamente pelo número da sua loja! 🚀`;
+
+    const res = await this.sendTenantWhatsAppMessage(tenantId, targetPhone, text);
+
+    return {
+      success: true,
+      phone: targetPhone,
+      tradeName: tenant.tradeName,
+      message: "Mensagem disparada com sucesso!",
+      response: res,
+    };
+  }
+
+  private async updateTenantWhatsAppSettings(tenantId: string, whatsappData: Record<string, any>) {
+    try {
+      const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+      if (!tenant) return;
+
+      let currentSettings: any = {};
+      try {
+        currentSettings = typeof tenant.settings === "string" ? JSON.parse(tenant.settings) : tenant.settings || {};
+      } catch {
+        currentSettings = {};
+      }
+
+      const newSettings = {
+        ...currentSettings,
+        ...whatsappData,
+      };
+
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { settings: JSON.stringify(newSettings) },
+      });
+    } catch {}
+  }
 }

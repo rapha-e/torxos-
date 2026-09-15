@@ -192,5 +192,36 @@ export class TenantController {
   async deleteTenantBySuperAdmin(@Param("id") tenantId: string) {
     return this.tenantService.deleteTenantBySuperAdmin(tenantId);
   }
+
+  // =========================================================================
+  // WHATSAPP MULTI-TENANT POR ASSISTÊNCIA TÉCNICA
+  // =========================================================================
+
+  @Get("whatsapp/status")
+  @ApiOperation({ summary: "Consulta se a assistência possui WhatsApp conectado ou QR Code disponível" })
+  async getTenantWhatsAppStatus(@CurrentTenant() tenantId: string) {
+    return this.tenantService.getWhatsAppConnectInfo(tenantId);
+  }
+
+  @Post("whatsapp/connect")
+  @ApiOperation({ summary: "Gera ou renova o QR Code de pareamento da assistência técnica" })
+  async connectTenantWhatsApp(@CurrentTenant() tenantId: string) {
+    return this.tenantService.getWhatsAppConnectInfo(tenantId);
+  }
+
+  @Post("whatsapp/disconnect")
+  @ApiOperation({ summary: "Desconecta a sessão de WhatsApp da assistência técnica" })
+  async disconnectTenantWhatsApp(@CurrentTenant() tenantId: string) {
+    return this.tenantService.disconnectWhatsApp(tenantId);
+  }
+
+  @Post("whatsapp/test")
+  @ApiOperation({ summary: "Dispara mensagem teste ou notificação pelo WhatsApp da assistência técnica" })
+  async testTenantWhatsApp(
+    @CurrentTenant() tenantId: string,
+    @Body() body: { phone?: string; text?: string },
+  ) {
+    return this.tenantService.testTenantWhatsAppMessage(tenantId, body?.phone, body?.text);
+  }
 }
 
