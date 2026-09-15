@@ -14,6 +14,10 @@ export class SalesService {
    * Executa baixa física atômica no estoque e gera receita liquidada no caixa.
    */
   async create(tenantId: string, dto: CreateSaleDto) {
+    if (!tenantId || tenantId.trim() === "") {
+      throw new BadRequestException("Identificador da empresa (tenantId) é obrigatório.");
+    }
+
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException("A venda deve conter ao menos um produto.");
     }
@@ -258,6 +262,9 @@ export class SalesService {
    * Lista o histórico de vendas de balcão
    */
   async list(tenantId: string, search?: string, startDate?: string, endDate?: string, paymentMethod?: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      return [];
+    }
     const where: any = { tenantId };
 
     if (paymentMethod) {
@@ -298,6 +305,9 @@ export class SalesService {
    * Obtém os dados completos de uma venda (para reimpressão de comprovante térmico)
    */
   async findById(tenantId: string, id: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      throw new NotFoundException("Empresa não identificada.");
+    }
     const sale = await this.prisma.sale.findFirst({
       where: { id, tenantId },
       include: {

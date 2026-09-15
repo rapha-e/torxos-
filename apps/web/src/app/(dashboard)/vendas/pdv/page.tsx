@@ -992,77 +992,94 @@ export default function PdvPage() {
                 </div>
               </div>
 
-              {/* Preços, Margem de Lucro e Estoque */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#1C1C1A]">Custo (R$)</label>
-                  <input
-                    type="number"
-                    step="0.10"
-                    placeholder="15.00"
-                    value={newProdCostPrice}
-                    onChange={(e) => handleNewProdCostPriceChange(e.target.value)}
-                    className="w-full px-2.5 py-2 text-xs font-mono bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-lg focus:outline-none text-[#1C1C1A]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#1C1C1A] flex items-center justify-between">
-                    <span>Margem (%)</span>
-                    <span className="text-[9px] text-amber-800 bg-amber-100/70 px-1 py-0.2 rounded font-mono font-bold">Auto</span>
-                  </label>
-                  <div className="relative">
+              {/* Preços, Margem de Lucro e Estoque - Design Idêntico ao Anexo 1 */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#1C1C1A]">
+                      Preço de Custo (R$) <span className="text-rose-500">*</span>
+                    </label>
                     <input
                       type="number"
-                      step="0.5"
-                      placeholder="100"
-                      value={newProdProfitMargin}
-                      onChange={(e) => handleNewProdProfitMarginChange(e.target.value)}
-                      className="w-full pl-2.5 pr-5 py-2 text-xs font-mono font-semibold bg-[#F9F9F7] border border-amber-400/60 rounded-lg focus:outline-none text-[#1C1C1A]"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={newProdCostPrice}
+                      onChange={(e) => handleNewProdCostPriceChange(e.target.value)}
+                      className="w-full px-3 py-2 text-xs font-mono bg-white border border-[rgba(28,25,23,0.15)] rounded-xl focus:outline-none focus:border-[#1C1C1A] text-[#1C1C1A] shadow-xs"
+                      required
                     />
-                    <span className="absolute right-1.5 top-2 text-[#71716C] font-semibold text-xs pointer-events-none">%</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#1C1C1A] flex items-center justify-between">
+                      <span>Margem (%)</span>
+                      <span className="text-[9px] text-amber-900 bg-amber-200/80 px-1.5 py-0.5 rounded font-mono font-bold">Auto</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="30"
+                        value={newProdProfitMargin}
+                        onChange={(e) => handleNewProdProfitMarginChange(e.target.value)}
+                        className="w-full pl-3 pr-6 py-2 text-xs font-mono font-bold bg-amber-50/20 border-2 border-amber-400 rounded-xl focus:outline-none focus:border-amber-500 text-amber-950 shadow-xs"
+                      />
+                      <span className="absolute right-2 top-2 text-amber-800 font-bold text-xs pointer-events-none">%</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#1C1C1A]">
+                      Preço Balcão (R$) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="0.00"
+                      value={newProdSalePrice}
+                      onChange={(e) => handleNewProdSalePriceChange(e.target.value)}
+                      className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-[rgba(28,25,23,0.15)] rounded-xl focus:outline-none focus:border-emerald-600 text-emerald-800 shadow-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#1C1C1A]">Saldo Inicial</label>
+                    <input
+                      type="number"
+                      step="1"
+                      placeholder="10"
+                      value={newProdStock}
+                      onChange={(e) => setNewProdStock(e.target.value)}
+                      className="w-full px-3 py-2 text-xs font-mono bg-white border border-[rgba(28,25,23,0.15)] rounded-xl focus:outline-none focus:border-[#1C1C1A] text-[#1C1C1A] shadow-xs"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#1C1C1A]">
-                    Venda (R$) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.50"
-                    required
-                    placeholder="65.00"
-                    value={newProdSalePrice}
-                    onChange={(e) => handleNewProdSalePriceChange(e.target.value)}
-                    className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-lg focus:outline-none text-emerald-800"
-                  />
-                </div>
+                {/* Card de Lucro Bruto Unitário (Design do Anexo 1) */}
+                {(() => {
+                  const costVal = parseFloat(newProdCostPrice) || 0;
+                  const saleVal = parseFloat(newProdSalePrice) || 0;
+                  const profitVal = saleVal > costVal ? (saleVal - costVal) : 0;
+                  const marginVal = costVal > 0 
+                    ? (newProdProfitMargin || (((saleVal - costVal) / costVal) * 100).toFixed(0)) 
+                    : (newProdProfitMargin || "0");
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#1C1C1A]">Estoque Inicial</label>
-                  <input
-                    type="number"
-                    step="1"
-                    placeholder="10"
-                    value={newProdStock}
-                    onChange={(e) => setNewProdStock(e.target.value)}
-                    className="w-full px-2.5 py-2 text-xs font-mono bg-[#F9F9F7] border border-[rgba(28,25,23,0.12)] rounded-lg focus:outline-none text-[#1C1C1A]"
-                  />
-                </div>
+                  return (
+                    <div className="p-3 rounded-xl bg-[#EDFAF2] border border-[#A7E8C4] flex items-center justify-between text-xs text-[#0F5132] transition-all shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#198754] shrink-0" />
+                        <span className="font-semibold text-[#1C1C1A]">
+                          Lucro Bruto Unitário: <strong className="text-sm font-bold text-[#0F5132]">R$ {profitVal.toFixed(2)}</strong>
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-[#D1E7DD] border border-[#A3CFBB] text-[#0F5132]">
+                        +{marginVal}% Margem
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
-
-              {/* Indicador de Lucro Bruto Unitário em Tempo Real */}
-              {parseFloat(newProdCostPrice) > 0 && parseFloat(newProdSalePrice) > 0 && (
-                <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200/70 flex items-center justify-between text-xs text-emerald-950 animate-in fade-in">
-                  <span className="font-medium">
-                    Lucro Bruto Unitário: <strong>R$ {(parseFloat(newProdSalePrice) - parseFloat(newProdCostPrice)).toFixed(2)}</strong>
-                  </span>
-                  <span className="font-mono font-bold text-emerald-800 text-[11px] bg-white px-2 py-0.5 rounded border border-emerald-200">
-                    +{newProdProfitMargin || (((parseFloat(newProdSalePrice) - parseFloat(newProdCostPrice)) / parseFloat(newProdCostPrice)) * 100).toFixed(1)}% Margem
-                  </span>
-                </div>
-              )}
 
               {/* Localização no Balcão */}
               <div className="space-y-1">

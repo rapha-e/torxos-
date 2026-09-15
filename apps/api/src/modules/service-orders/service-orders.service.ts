@@ -10,6 +10,9 @@ export class ServiceOrdersService {
   constructor(private prisma: PrismaService) {}
 
   async list(tenantId: string, status?: OsStatus, search?: string, startDate?: string, endDate?: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      return [];
+    }
     const where: any = { tenantId };
     if (status) where.status = status;
     if (search) {
@@ -41,17 +44,7 @@ export class ServiceOrdersService {
   }
 
   async getKanban(tenantId: string) {
-    const orders = await this.prisma.serviceOrder.findMany({
-      where: { tenantId },
-      include: {
-        client: true,
-        technician: { select: { id: true, name: true } },
-        items: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const columns: Record<OsStatus, typeof orders> = {
+    const columns: Record<OsStatus, any[]> = {
       TRIAGE: [],
       ANALYSIS: [],
       AWAITING_APPROVAL: [],
@@ -63,6 +56,20 @@ export class ServiceOrdersService {
       DELIVERED: [],
       CANCELED: [],
     };
+
+    if (!tenantId || tenantId.trim() === "") {
+      return columns;
+    }
+
+    const orders = await this.prisma.serviceOrder.findMany({
+      where: { tenantId },
+      include: {
+        client: true,
+        technician: { select: { id: true, name: true } },
+        items: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
     for (const order of orders) {
       if (order.status === OsStatus.AWAITING_PARTS || (order.status as string) === "AWAITING_PARTS") {

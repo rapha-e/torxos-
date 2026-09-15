@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, BadRequestException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 
 export interface StockPredictionResult {
@@ -22,6 +22,9 @@ export class StockService {
   constructor(private prisma: PrismaService) {}
 
   async listProducts(tenantId: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      return [];
+    }
     return this.prisma.product.findMany({
       where: { tenantId, isActive: true },
       orderBy: { name: "asc" },
@@ -29,6 +32,9 @@ export class StockService {
   }
 
   async createProduct(tenantId: string, data: any) {
+    if (!tenantId || tenantId.trim() === "") {
+      throw new BadRequestException("Identificador da empresa (tenantId) é obrigatório.");
+    }
     const costPrice = Number(data.costPrice || 0);
     const salePrice = Number(data.salePrice || 0);
     const currentStock = Number(data.currentStock || 0);
@@ -53,6 +59,18 @@ export class StockService {
   }
 
   async updateProduct(tenantId: string, id: string, data: any) {
+    if (!tenantId || tenantId.trim() === "") {
+      throw new BadRequestException("Identificador da empresa (tenantId) é obrigatório.");
+    }
+
+    const existingProduct = await this.prisma.product.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!existingProduct) {
+      throw new NotFoundException("Produto não encontrado no catálogo desta empresa.");
+    }
+
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.sku !== undefined) updateData.sku = data.sku || null;
@@ -73,6 +91,18 @@ export class StockService {
   }
 
   async deleteProduct(tenantId: string, id: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      throw new BadRequestException("Identificador da empresa (tenantId) é obrigatório.");
+    }
+
+    const existingProduct = await this.prisma.product.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!existingProduct) {
+      throw new NotFoundException("Produto não encontrado no catálogo desta empresa.");
+    }
+
     return this.prisma.product.update({
       where: { id },
       data: { isActive: false },
@@ -80,6 +110,9 @@ export class StockService {
   }
 
   async getStockoutPredictions(tenantId: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      return [];
+    }
     return this.prisma.product.findMany({
       where: {
         tenantId,
@@ -98,6 +131,9 @@ export class StockService {
    * Runway = floor(Estoque / CMD)
    */
   async runInventoryForecasting(tenantId: string): Promise<StockPredictionResult[]> {
+    if (!tenantId || tenantId.trim() === "") {
+      return [];
+    }
     this.logger.log(`Iniciando cálculo preditivo de estoque para o Tenant: ${tenantId}`);
 
     const thirtyDaysAgo = new Date();

@@ -240,6 +240,19 @@ export class FinanceService {
    * Projeção de Fluxo de Caixa (Realizado vs Previsto 30/60/90 dias)
    */
   async getCashFlowProjection(tenantId: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      return {
+        currentTotalBalance: 0,
+        projectedReceivables: 0,
+        projectedPayables: 0,
+        projectedFinalBalance: 0,
+        accounts: [],
+        pendingCount: 0,
+        upcomingTransactions: [],
+        recentSettledTransactions: [],
+      };
+    }
+
     const today = new Date();
     const future90d = new Date();
     future90d.setDate(today.getDate() + 90);

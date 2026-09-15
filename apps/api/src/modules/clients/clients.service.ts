@@ -6,6 +6,9 @@ export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
   async list(tenantId: string, search?: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      return [];
+    }
     const where: any = { tenantId };
     if (search) {
       where.OR = [
@@ -21,6 +24,9 @@ export class ClientsService {
   }
 
   async create(tenantId: string, data: any) {
+    if (!tenantId || tenantId.trim() === "") {
+      throw new Error("Identificador da empresa (tenantId) é obrigatório.");
+    }
     return this.prisma.client.create({
       data: {
         ...data,
@@ -30,6 +36,9 @@ export class ClientsService {
   }
 
   async findById(tenantId: string, id: string) {
+    if (!tenantId || tenantId.trim() === "") {
+      return null;
+    }
     return this.prisma.client.findFirst({
       where: { id, tenantId },
       include: {

@@ -19,6 +19,11 @@ export const CurrentUser = createParamDecorator(
 export const CurrentTenant = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): string => {
     const request = ctx.switchToHttp().getRequest();
-    return request.user?.tenantId || request.headers["x-tenant-id"];
+    const explicitTenant = request.headers["x-tenant-id"];
+    // Se o usuário for SUPER_ADMIN e especificar um x-tenant-id, opera naquele tenant
+    if (request.user?.role === "SUPER_ADMIN" && explicitTenant) {
+      return String(explicitTenant).trim();
+    }
+    return request.user?.tenantId ? String(request.user.tenantId).trim() : (explicitTenant ? String(explicitTenant).trim() : "");
   }
 );
