@@ -18,6 +18,21 @@ import { getCurrentUser } from "@/lib/api";
 
 const SUPPORT_WHATSAPP_NUMBER = "5561992295814";
 
+function getFriendlyPageName(path: string): string {
+  if (!path || path === "/") return "Início / Visão Geral";
+  if (path.startsWith("/super-admin")) return "Painel Geral (Super Admin)";
+  if (path.startsWith("/os/nova")) return "Nova Ordem de Serviço";
+  if (path.startsWith("/os/kanban")) return "Quadro de Bancada (Kanban)";
+  if (path.startsWith("/os")) return "Ordens de Serviço";
+  if (path.startsWith("/estoque")) return "Gestão de Estoque";
+  if (path.startsWith("/vendas/pdv")) return "Frente de Caixa (PDV)";
+  if (path.startsWith("/vendas")) return "Vendas & Histórico";
+  if (path.startsWith("/financeiro")) return "Financeiro";
+  if (path.startsWith("/configuracoes")) return "Configurações da Loja";
+  if (path.startsWith("/mentor")) return "Torx AI Mentor";
+  return path;
+}
+
 export function SupportModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [ticketType, setTicketType] = useState<"DUVIDA" | "MANUTENCAO">("DUVIDA");
@@ -26,9 +41,9 @@ export function SupportModal() {
   const pathname = usePathname();
 
   const user = getCurrentUser();
-  const operatorName = user?.name || "Operador Não Identificado";
-  const operatorEmail = user?.email || "";
-  const companyName = user?.tenantName || "Assistência Técnica";
+  const operatorName = user?.name || "Operador";
+  const operatorEmail = user?.email ? ` (${user.email})` : "";
+  const companyName = user?.tenantName || "Minha Assistência";
 
   const handleOpen = () => {
     setErrorMsg("");
@@ -48,20 +63,26 @@ export function SupportModal() {
       return;
     }
 
-    const typeLabel =
+    const typeDescription =
       ticketType === "DUVIDA"
-        ? "💡 DÚVIDA OPERACIONAL"
-        : "🛠️ MANUTENÇÃO / AJUSTE NO SISTEMA";
+        ? "Dúvida rápida / Como usar uma função"
+        : "Ajuste técnico ou suporte no sistema";
+
+    const friendlyPage = getFriendlyPageName(pathname || "");
 
     const formattedMessage = [
-      `*🚨 SOLICITAÇÃO DE SUPORTE — TORXOS*`,
-      `*Tipo:* ${typeLabel}`,
-      `*Empresa:* ${companyName}`,
-      `*Operador:* ${operatorName} (${operatorEmail})`,
-      `*Página de Origem:* ${pathname}`,
-      `---------------------------------------`,
-      `*Mensagem:*`,
-      message.trim(),
+      `Olá, time de suporte TorxOS! 👋 Tudo bem?`,
+      ``,
+      `Preciso de uma orientação no sistema:`,
+      `"${message.trim()}"`,
+      ``,
+      `*Detalhes do atendimento:*`,
+      `• *Assunto:* ${typeDescription}`,
+      `• *Loja:* ${companyName}`,
+      `• *Operador:* ${operatorName}${operatorEmail}`,
+      `• *Onde estou:* ${friendlyPage}`,
+      ``,
+      `Aguardo o retorno de vocês. Muito obrigado(a)! ✨`,
     ].join("\n");
 
     const whatsappUrl = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(
