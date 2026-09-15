@@ -59,6 +59,99 @@ interface TeamMember {
   isActive: boolean;
 }
 
+interface RolePermissionInfo {
+  title: string;
+  badge: string;
+  badgeColor: string;
+  description: string;
+  permissions: string[];
+  restrictions: string[];
+}
+
+const ROLE_PERMISSIONS_DETAILS: Record<string, RolePermissionInfo> = {
+  ADMIN: {
+    title: "Administrador / Proprietário",
+    badge: "Acesso Total",
+    badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    description: "Controle absoluto sobre a assistência técnica, dados financeiros estratégicos, equipe e configurações da empresa.",
+    permissions: [
+      "Gestão Financeira Completa (Fluxo de Caixa, DRE, Contas a Pagar e Receber, Conciliação)",
+      "Gestão de Equipe (Contratação, redefinição de senhas, percentuais de comissão)",
+      "Controle total de Ordens de Serviço (Criação, edição de laudos, aprovação e estorno)",
+      "Ponto de Venda (PDV) com acesso à margem de lucro e cancelamento de vendas",
+      "Controle de Estoque, compras, inventário e preço de custo",
+      "Configurações gerais da empresa, termos de garantia e WhatsApp comercial",
+    ],
+    restrictions: [],
+  },
+  MANAGER: {
+    title: "Gerente de Loja",
+    badge: "Gestão Operacional",
+    badgeColor: "bg-blue-50 text-blue-800 border-blue-200",
+    description: "Supervisão diária da equipe técnica, atendimento, vendas de balcão e cumprimento de prazos de entrega.",
+    permissions: [
+      "Supervisão e movimentação de todas as OS no Kanban da bancada",
+      "Operação do Ponto de Venda (PDV) e liberação de descontos autorizados",
+      "Visualização e solicitação de compras de reposição no Estoque",
+      "Distribuição de ordens de serviço e metas para técnicos",
+      "Acompanhamento do fechamento de caixa diário do balcão",
+    ],
+    restrictions: [
+      "Sem permissão para alterar dados cadastrais ou plano de assinatura da empresa",
+      "Sem permissão para excluir colaboradores da equipe",
+    ],
+  },
+  TECHNICIAN: {
+    title: "Técnico de Bancada / Laboratório",
+    badge: "Laboratório & Reparos",
+    badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
+    description: "Focado estritamente na execução dos reparos, diagnósticos laboratoriais, laudos e substituição de componentes.",
+    permissions: [
+      "Visualização e movimentação de OS nas etapas técnicas (Análise, Em Reparo, Aguardando Peça, Controle de Qualidade)",
+      "Lançamento de laudos técnicos detalhados, defeitos constatados e peças necessárias",
+      "Upload de fotos da bancada e checklist de integridade do aparelho",
+      "Acompanhamento em tempo real das suas comissões por serviços e peças",
+    ],
+    restrictions: [
+      "Sem acesso ao fluxo de caixa, DRE ou contas a pagar da empresa",
+      "Sem acesso a dados fiscais ou faturamento global da assistência",
+    ],
+  },
+  ATTENDANT: {
+    title: "Atendente de Balcão / Recepção",
+    badge: "Atendimento & Balcão",
+    badgeColor: "bg-purple-50 text-purple-800 border-purple-200",
+    description: "Recepção de clientes, abertura de chamados, envio de orçamentos e entrega de aparelhos reparados.",
+    permissions: [
+      "Abertura rápida de novas Ordens de Serviço (triagem de entrada, fotos e relatos de avarias)",
+      "Cadastro e consulta da base de clientes e histórico de visitas",
+      "Envio de laudos e orçamentos aos clientes via WhatsApp com link de aprovação",
+      "Operação do Ponto de Venda (PDV) para venda de acessórios e peças",
+      "Finalização de OS com coleta de assinatura digital na entrega",
+    ],
+    restrictions: [
+      "Sem acesso a relatórios gerenciais ou financeiro avançado",
+      "Sem permissão para alterar custos de peças ou comissões",
+    ],
+  },
+  FINANCIAL: {
+    title: "Operador Financeiro / Administrativo",
+    badge: "Financeiro & Contas",
+    badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    description: "Controle de recebimentos, pagamentos, conciliação e liquidação de comissões da equipe.",
+    permissions: [
+      "Abertura, fechamento e conciliação de caixa diário",
+      "Lançamento e quitação de títulos a pagar e a receber",
+      "Consulta e exportação de DRE e fluxo de caixa consolidado",
+      "Conferência e liquidação de comissões técnicas",
+    ],
+    restrictions: [
+      "Sem permissão para alterar diagnósticos laboratoriais",
+      "Sem permissão para gerenciar filiais ou excluir a empresa",
+    ],
+  },
+};
+
 export default function TenantSettingsPage() {
   const [activeTab, setActiveTab] = useState<"COMPANY" | "WARRANTY" | "TEAM" | "SUBSCRIPTION" | "BRANCHES" | "WHATSAPP">("COMPANY");
   const [loading, setLoading] = useState<boolean>(true);
@@ -132,7 +225,7 @@ export default function TenantSettingsPage() {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [newUserName, setNewUserName] = useState<string>("");
   const [newUserEmail, setNewUserEmail] = useState<string>("");
-  const [newUserRole, setNewUserRole] = useState<string>("TECHNICIAN");
+  const [newUserRole, setNewUserRole] = useState<string>("");
   const [newUserCommServices, setNewUserCommServices] = useState<number>(10.0);
   const [newUserCommProducts, setNewUserCommProducts] = useState<number>(3.0);
 
@@ -158,7 +251,7 @@ export default function TenantSettingsPage() {
     setEditingMember(null);
     setNewUserName("");
     setNewUserEmail("");
-    setNewUserRole("TECHNICIAN");
+    setNewUserRole("");
     setNewUserCommServices(10.0);
     setNewUserCommProducts(3.0);
     setShowUserModal(true);
@@ -345,7 +438,15 @@ export default function TenantSettingsPage() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName || !newUserEmail) return;
+    if (!newUserName.trim() || !newUserEmail.trim()) {
+      alert("Por favor, preencha o Nome Completo e E-mail do colaborador.");
+      return;
+    }
+
+    if (!newUserRole) {
+      alert("Por favor, selecione uma Função / Perfil para o colaborador.");
+      return;
+    }
 
     if (editingMember) {
       setTeam((prev) =>
@@ -1928,7 +2029,7 @@ export default function TenantSettingsPage() {
       {/* =================================================================== */}
       {showUserModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-[#EBEBE8] shadow-xl space-y-4 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 border border-[#EBEBE8] shadow-xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-[#EBEBE8] pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-[#FAF9F6] text-[#181816] flex items-center justify-center border border-[#EBEBE8]">
@@ -1950,43 +2051,103 @@ export default function TenantSettingsPage() {
 
             <form onSubmit={handleAddUser} className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-[#181816] mb-1">Nome Completo</label>
+                <label className="block font-semibold text-[#181816] mb-1">Nome Completo *</label>
                 <input
                   type="text"
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
                   placeholder="Ex: Pedro Henrique Silva"
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none focus:border-[#181816]"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-[#181816] mb-1">E-mail de Login</label>
+                <label className="block font-semibold text-[#181816] mb-1">E-mail de Login *</label>
                 <input
                   type="email"
                   value={newUserEmail}
                   onChange={(e) => setNewUserEmail(e.target.value)}
-                  placeholder="pedro.tecnico@evorix.com.br"
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none"
+                  placeholder="pedro.tecnico@torxos.tech"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none focus:border-[#181816]"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-[#181816] mb-1">Função / Perfil</label>
+                <label className="block font-semibold text-[#181816] mb-1">Função / Perfil *</label>
                 <select
                   value={newUserRole}
                   onChange={(e) => setNewUserRole(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none"
+                  className={`w-full px-3 py-2.5 rounded-xl bg-[#FAF9F6] border ${
+                    !newUserRole ? "border-amber-400/80 bg-amber-50/20 text-[#787774]" : "border-[#E5E5E0] text-[#181816] font-semibold"
+                  } text-xs focus:outline-none focus:border-[#181816] transition-colors`}
+                  required
                 >
-                  <option value="TECHNICIAN">Técnico de Bancada</option>
-                  <option value="ATTENDANT">Atendente de Balcão</option>
-                  <option value="FINANCIAL">Operador Financeiro</option>
+                  <option value="" disabled>Selecione uma função / perfil...</option>
+                  <option value="TECHNICIAN">Técnico de Bancada / Laboratório</option>
+                  <option value="ATTENDANT">Atendente de Balcão / Recepção</option>
+                  <option value="FINANCIAL">Operador Financeiro / Administrativo</option>
                   <option value="MANAGER">Gerente de Loja</option>
-                  <option value="ADMIN">Administrador</option>
+                  <option value="ADMIN">Administrador / Proprietário</option>
                 </select>
+                {!newUserRole && (
+                  <p className="text-[11px] text-amber-700 mt-1 flex items-center gap-1">
+                    <span>💡</span> Selecione um perfil acima para visualizar as permissões e tarefas detalhadas.
+                  </p>
+                )}
               </div>
+
+              {/* CARD EXPLICATIVO DE PERMISSÕES, ATRIBUIÇÕES E TAREFAS */}
+              {newUserRole && ROLE_PERMISSIONS_DETAILS[newUserRole] && (
+                <div className="p-3.5 rounded-2xl bg-[#FAF9F6] border border-[#E5E5E0] space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between gap-2 border-b border-[#EBEBE8] pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-[#181816]" />
+                      <span className="font-bold text-[#181816] text-xs">
+                        {ROLE_PERMISSIONS_DETAILS[newUserRole].title}
+                      </span>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ROLE_PERMISSIONS_DETAILS[newUserRole].badgeColor}`}>
+                      {ROLE_PERMISSIONS_DETAILS[newUserRole].badge}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-[#555552] leading-relaxed">
+                    {ROLE_PERMISSIONS_DETAILS[newUserRole].description}
+                  </p>
+
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#787774] block">
+                      Permissões & Tarefas Permitidas no Sistema:
+                    </span>
+                    <ul className="space-y-1 text-[11px] text-[#222]">
+                      {ROLE_PERMISSIONS_DETAILS[newUserRole].permissions.map((perm, idx) => (
+                        <li key={idx} className="flex items-start gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{perm}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {ROLE_PERMISSIONS_DETAILS[newUserRole].restrictions.length > 0 && (
+                    <div className="space-y-1 pt-2 border-t border-[#EBEBE8]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">
+                        Travas de Segurança & Restrições:
+                      </span>
+                      <ul className="space-y-1 text-[11px] text-[#666]">
+                        {ROLE_PERMISSIONS_DETAILS[newUserRole].restrictions.map((restr, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5 text-stone-600">
+                            <Lock className="w-3 h-3 text-stone-400 shrink-0 mt-0.5" />
+                            <span>{restr}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
