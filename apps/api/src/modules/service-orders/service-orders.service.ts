@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-import { CreateServiceOrderDto, UpdateOsStatusDto, ClientApproveDto } from "./dto/service-order.dto";
+import { CreateServiceOrderDto, UpdateOsStatusDto, ClientApproveDto, ClientRejectDto } from "./dto/service-order.dto";
 import { OsStatus, TransactionType, TransactionStatus } from "../../common/enums";
 import { TenantService } from "../tenant/tenant.service";
 
@@ -76,8 +76,11 @@ export class ServiceOrdersService {
     });
 
     for (const order of orders) {
-      if (order.status === OsStatus.AWAITING_PARTS || (order.status as string) === "AWAITING_PARTS") {
+      const st = order.status as string;
+      if (st === "AWAITING_PARTS" || st === "IN_MAINTENANCE" || st === "QUALITY_CHECK") {
         columns[OsStatus.APPROVED].push({ ...order, status: OsStatus.APPROVED });
+      } else if (st === "ANALYSIS") {
+        columns[OsStatus.TRIAGE].push({ ...order, status: OsStatus.TRIAGE });
       } else if (columns[order.status]) {
         columns[order.status].push(order);
       }
@@ -85,6 +88,7 @@ export class ServiceOrdersService {
 
     return columns;
   }
+
 
   async findById(tenantId: string, id: string) {
     const order = await this.prisma.serviceOrder.findFirst({
@@ -182,13 +186,15 @@ export class ServiceOrdersService {
     const oldStatus = order.status;
     const newStatus = dto.status;
 
-    // Regra 1: Baixa física no estoque ao transicionar para IN_MAINTENANCE
+    // Regra 1: Baixa física no estoque ao transicionar para APPROVED (ou estágios de execução)
     // TRAVA ANTIFALHA DE BANCADA: Se a OS já teve baixa de estoque realizada (order.stockDeducted === true),
     // qualquer movimentação subsequente pela bancada NÃO efetuará baixa duplicada.
-    if (newStatus === "IN_MAINTENANCE" && !order.stockDeducted) {
+    const isWorkbenchOrAfter = ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(newStatus);
+    if (isWorkbenchOrAfter && !order.stockDeducted) {
       await this.validateStockAvailability(tenantId, order);
       await this.deductStockForOrder(tenantId, order);
     }
+
 
     // Regra 2: Estorno automático de estoque caso a OS com baixa seja cancelada (CANCELED)
     if (newStatus === "CANCELED" && order.stockDeducted) {
@@ -501,6 +507,16 @@ export class ServiceOrdersService {
       },
     });
 
+    if (!order.stockDeducted) {
+      try {
+        await this.validateStockAvailability(order.tenantId, order);
+        await this.deductStockForOrder(order.tenantId, order);
+      } catch (stockErr: any) {
+        this.logger.warn(`Estoque não baixado na aprovação remota do cliente: ${stockErr.message}`);
+      }
+    }
+
+
     const tenantName = updatedOrder.tenant?.tradeName || "Assistência Técnica";
     const tenantPhone = updatedOrder.tenant?.phone;
     const clientName = updatedOrder.client?.name || "Cliente";
@@ -540,6 +556,60 @@ export class ServiceOrdersService {
         .sendTenantWhatsAppMessage(updatedOrder.tenantId, clientPhone, confirmClientMsg)
         .catch((err) => {
           this.logger.warn(`Erro ao enviar confirmação WhatsApp para cliente: ${err.message}`);
+        });
+    }
+
+    return updatedOrder;
+  }
+
+  async clientReject(publicToken: string, dto?: ClientRejectDto) {
+    const order = await this.findByPublicToken(publicToken);
+
+    if (order.status === "APPROVED" || order.status === "DELIVERED" || order.status === "CANCELED") {
+      throw new BadRequestException("Esta OS já foi processada ou não pode ser recusada neste status.");
+    }
+
+    if (order.stockDeducted) {
+      await this.restoreStockForOrder(order.tenantId, order);
+    }
+
+    const rejectionNote = dto?.reason
+      ? `[RECUSADO PELO CLIENTE]: ${dto.reason}`
+      : "[RECUSADO PELO CLIENTE]";
+    const updatedDiagnosis = order.technicalDiagnosis
+      ? `${order.technicalDiagnosis}\n${rejectionNote}`
+      : rejectionNote;
+
+    const updatedOrder = await this.prisma.serviceOrder.update({
+      where: { publicToken },
+      data: {
+        status: OsStatus.CANCELED,
+        technicalDiagnosis: updatedDiagnosis,
+      },
+      include: {
+        items: true,
+        client: true,
+        tenant: true,
+        technician: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    const tenantName = updatedOrder.tenant?.tradeName || "Assistência Técnica";
+    const tenantPhone = updatedOrder.tenant?.phone;
+    const clientName = updatedOrder.client?.name || "Cliente";
+
+    if (tenantPhone) {
+      const alertTenantMsg =
+        `⚠️ *${tenantName} - Orçamento Recusado pelo Cliente*\n\n` +
+        `O cliente *${clientName}* recusou formalmente o orçamento da *OS #${updatedOrder.osNumber}* (${updatedOrder.deviceBrand || ""} ${updatedOrder.deviceModel}).\n\n` +
+        (dto?.reason ? `💬 *Motivo informado:* ${dto.reason}\n\n` : "") +
+        `🛠️ *Status da OS:* Atualizada para *Cancelado*.\n` +
+        `👉 Acesse o painel da sua loja: https://torxos.tech/os`;
+
+      this.tenantService
+        .sendTenantWhatsAppMessage(updatedOrder.tenantId, tenantPhone, alertTenantMsg)
+        .catch((err) => {
+          this.logger.warn(`Erro ao enviar alerta WhatsApp de recusa para assistência: ${err.message}`);
         });
     }
 

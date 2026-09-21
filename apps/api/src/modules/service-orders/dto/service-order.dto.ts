@@ -141,3 +141,11 @@ export class ClientApproveDto {
   @IsString()
   signatureDataUrl?: string;
 }
+
+export class ClientRejectDto {
+  @ApiPropertyOptional({ description: "Motivo opcional da recusa do orçamento pelo cliente", example: "Valor acima do planejado" })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+

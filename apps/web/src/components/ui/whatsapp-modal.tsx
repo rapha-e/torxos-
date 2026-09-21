@@ -33,7 +33,13 @@ export function WhatsAppNotificationModal({
   const [apiSuccess, setApiSuccess] = useState(false);
 
   const currentUser = typeof window !== "undefined" ? getCurrentUser() : null;
-  const storeName = currentUser?.tenantName ? currentUser.tenantName : "TorxOS Tech Center";
+  const cachedProfile = typeof window !== "undefined" ? (() => {
+    try {
+      const c = localStorage.getItem("torxos_company_profile") || localStorage.getItem("evorix_company_profile");
+      return c ? JSON.parse(c) : null;
+    } catch { return null; }
+  })() : null;
+  const storeName = currentUser?.tenantName || cachedProfile?.tradeName || "Assistência Técnica";
 
   const origin =
     typeof window !== "undefined" && window.location.origin

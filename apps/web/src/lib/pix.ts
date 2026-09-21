@@ -57,20 +57,21 @@ function calculateCrc16(payload: string): string {
 export function generatePixBrCode(params: PixChargeParams): PixChargeResult {
   const {
     pixKey,
-    merchantName = "TORXOS TECH",
+    merchantName = "CENTRO TECNICO",
     merchantCity = "SAO PAULO",
     amount,
-    txId = `OS${Date.now().toString().slice(-6)}`,
+    txId = "***",
     description,
   } = params;
 
-  const cleanName = sanitizeText(merchantName, 25) || "TORXOS TECH";
+  const cleanKey = pixKey.trim();
+  const cleanName = sanitizeText(merchantName, 25) || "CENTRO TECNICO";
   const cleanCity = sanitizeText(merchantCity, 15) || "SAO PAULO";
   const cleanTxId = sanitizeText(txId, 25) || "***";
   const formattedAmount = amount.toFixed(2);
 
   // 1. Tag 26: Merchant Account Information
-  let merchantAccountInfo = formatTlv("00", "br.gov.bcb.pix") + formatTlv("01", pixKey.trim());
+  let merchantAccountInfo = formatTlv("00", "br.gov.bcb.pix") + formatTlv("01", cleanKey);
   if (description) {
     merchantAccountInfo += formatTlv("02", sanitizeText(description, 40));
   }

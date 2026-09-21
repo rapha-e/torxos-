@@ -33,7 +33,7 @@ export function PixPaymentModal({
   description,
   orderNumber,
   pixKey = "12.345.678/0001-99", // CNPJ padrão da loja
-  merchantName = "TorxOS TECH CENTER",
+  merchantName = "CENTRO TECNICO",
   onPaymentConfirmed,
 }: PixPaymentModalProps) {
   const [copied, setCopied] = useState<boolean>(false);

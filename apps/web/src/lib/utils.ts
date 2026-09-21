@@ -43,7 +43,7 @@ export function translateOsStatus(status: string | null | undefined): string {
     TRIAGE: "Triagem",
     ANALYSIS: "Em Análise",
     AWAITING_APPROVAL: "Aguard. Aprovação",
-    APPROVED: "Aprovado",
+    APPROVED: "Aprovado / Bancada",
     IN_MAINTENANCE: "Em Bancada",
     AWAITING_PARTS: "Aguard. Peças",
     QUALITY_CHECK: "Controle de Qualidade",

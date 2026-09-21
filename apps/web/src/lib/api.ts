@@ -477,7 +477,7 @@ export function getLocalServiceOrders() {
       id: "os-002",
       osNumber: 1040,
       publicToken: "demo-token-sams22",
-      status: "IN_MAINTENANCE",
+      status: "APPROVED",
       priority: "NORMAL",
       client: {
         id: "cli-002",
@@ -559,10 +559,10 @@ export function getLocalServiceOrders() {
     },
     {
       id: "os-004",
-      osNumber: 1044,
+      osNumber: 1042,
       publicToken: "demo-token-dell5000",
-      status: "ANALYSIS",
-      priority: "URGENT",
+      status: "TRIAGE",
+      priority: "NORMAL",
       client: {
         id: "cli-004",
         name: "Roberto Menezes",
@@ -642,9 +642,9 @@ export function getLocalServiceOrders() {
     },
     {
       id: "os-006",
-      osNumber: 1038,
+      osNumber: 1044,
       publicToken: "demo-token-ipadair4",
-      status: "QUALITY_CHECK",
+      status: "APPROVED",
       priority: "NORMAL",
       client: {
         id: "cli-006",
@@ -1075,12 +1075,8 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
     const orders = getLocalServiceOrders();
     const columns: Record<string, any[]> = {
       TRIAGE: [],
-      ANALYSIS: [],
       AWAITING_APPROVAL: [],
       APPROVED: [],
-      IN_MAINTENANCE: [],
-      AWAITING_PARTS: [],
-      QUALITY_CHECK: [],
       READY_FOR_PICKUP: [],
       DELIVERED: [],
       CANCELED: [],
@@ -1088,11 +1084,15 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
 
     for (const order of orders) {
       let statusKey = order.status || "TRIAGE";
-      if (statusKey === "AWAITING_PARTS") {
+      if (statusKey === "ANALYSIS") {
+        statusKey = "TRIAGE";
+      } else if (statusKey === "AWAITING_PARTS" || statusKey === "IN_MAINTENANCE" || statusKey === "QUALITY_CHECK") {
         statusKey = "APPROVED";
       }
       if (columns[statusKey]) {
         columns[statusKey].push({ ...order, status: statusKey });
+      } else {
+        columns.TRIAGE.push({ ...order, status: "TRIAGE" });
       }
     }
 
@@ -1114,12 +1114,12 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
 
     const allOrders = getLocalServiceOrders();
 
-    // Se estiver movendo para IN_MAINTENANCE, valida estoque das peças
-    if (newStatus === "IN_MAINTENANCE") {
+    // Se estiver movendo para APPROVED (ou IN_MAINTENANCE legado), valida estoque das peças
+    if (newStatus === "APPROVED" || newStatus === "IN_MAINTENANCE") {
       const targetOrder = allOrders.find(
         (o: any) => o.id === targetId || o.publicToken === targetId || String(o.osNumber) === targetId
       );
-      if (targetOrder && Array.isArray(targetOrder.items)) {
+      if (targetOrder && Array.isArray(targetOrder.items) && !targetOrder.stockDeducted) {
         const currentStockList = getLocalStockList();
         for (const item of targetOrder.items) {
           if (item.itemType === "PRODUCT" && !item.stockDeducted) {
@@ -1138,10 +1138,11 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
 
     const updatedOrders = allOrders.map((o: any) => {
       if (o.id === targetId || o.publicToken === targetId || String(o.osNumber) === targetId) {
+        const isApprovedOrAfter = ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(newStatus);
         return {
           ...o,
           status: newStatus,
-          stockDeducted: newStatus === "IN_MAINTENANCE" ? true : (newStatus === "CANCELED" ? false : o.stockDeducted),
+          stockDeducted: newStatus === "CANCELED" ? false : (isApprovedOrAfter ? true : o.stockDeducted),
         };
       }
       return o;
@@ -1155,8 +1156,51 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
     return { id: targetId, status: newStatus };
   }
 
+
+  // Portal Público de OS (/public/os/:token e /approve ou /reject)
+  if (endpoint.includes("/public/os")) {
+    const allOrders = getLocalServiceOrders();
+    const tokenMatch = endpoint.match(/\/public\/os\/([^/?]+)/);
+    const requestedToken = tokenMatch ? tokenMatch[1] : "";
+    const found = allOrders.find(
+      (o: any) =>
+        o.publicToken === requestedToken ||
+        o.id === requestedToken ||
+        String(o.osNumber) === requestedToken
+    ) || allOrders[0] || {};
+
+    if (endpoint.includes("/approve")) {
+      const updated = allOrders.map((o: any) =>
+        o.id === found.id || o.publicToken === found.publicToken
+          ? { ...o, status: "APPROVED" }
+          : o
+      );
+      if (typeof window !== "undefined") {
+        localStorage.setItem("evorix_service_orders", JSON.stringify(updated));
+        localStorage.removeItem("evorix_kanban_state");
+      }
+      return { ...found, status: "APPROVED" };
+    }
+
+    if (endpoint.includes("/reject")) {
+      const updated = allOrders.map((o: any) =>
+        o.id === found.id || o.publicToken === found.publicToken
+          ? { ...o, status: "CANCELED" }
+          : o
+      );
+      if (typeof window !== "undefined") {
+        localStorage.setItem("evorix_service_orders", JSON.stringify(updated));
+        localStorage.removeItem("evorix_kanban_state");
+      }
+      return { ...found, status: "CANCELED" };
+    }
+
+    return found;
+  }
+
   // Consulta detalhada de uma OS (/service-orders/:id ou publicToken)
   const osIdMatch = endpoint.match(/\/service-orders\/([^?]+)/);
+
   if (osIdMatch && !endpoint.includes("/kanban")) {
     const requestedId = osIdMatch[1];
     const allOrders = getLocalServiceOrders();
@@ -1370,10 +1414,10 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
     const stockList = getLocalStockList();
     const finTrans = getLocalFinancialTransactions();
 
-    const inMaintenance = orders.filter((o: any) => o.status === "IN_MAINTENANCE").length;
+    const inMaintenance = orders.filter((o: any) => o.status === "APPROVED" || o.status === "IN_MAINTENANCE").length;
     const inTriage = orders.filter((o: any) => o.status === "TRIAGE" || o.status === "ANALYSIS").length;
-    const inApproved = orders.filter((o: any) => o.status === "APPROVED").length;
-    const inQuality = orders.filter((o: any) => o.status === "QUALITY_CHECK").length;
+    const inApproved = inMaintenance;
+    const inQuality = 0;
     const inReady = orders.filter((o: any) => o.status === "READY_FOR_PICKUP").length;
 
     const totalReceivables = finTrans

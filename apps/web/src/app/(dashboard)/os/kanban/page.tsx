@@ -27,34 +27,32 @@ import {
   SlidersHorizontal,
   MessageSquare,
   AlertTriangle,
+  Ban,
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { formatCurrency, formatDate, translatePriority } from "@/lib/utils";
 import { WhatsAppNotificationModal } from "@/components/ui/whatsapp-modal";
+import { CancelOsModal } from "@/components/ui/cancel-os-modal";
 
 const KANBAN_COLUMNS = [
   { id: "TRIAGE", label: "Triagem", dot: "bg-[#71716C]", badge: "bg-[#F3F3EF] text-[#71716C] border-[rgba(28,25,23,0.08)]", group: "INTAKE" },
-  { id: "ANALYSIS", label: "Em Análise", dot: "bg-blue-600", badge: "bg-blue-50 text-blue-800 border-blue-200", group: "INTAKE" },
   { id: "AWAITING_APPROVAL", label: "Aguard. Aprovação", dot: "bg-amber-600", badge: "bg-[#FEF3C7] text-amber-800 border-[#FDE68A]", group: "INTAKE" },
-  { id: "APPROVED", label: "Aprovado", dot: "bg-emerald-600", badge: "bg-[#DCFCE7] text-emerald-800 border-[#BBF7D0]", group: "WORKBENCH" },
-  { id: "IN_MAINTENANCE", label: "Em Bancada", dot: "bg-indigo-600", badge: "bg-indigo-50 text-indigo-800 border-indigo-200", group: "WORKBENCH" },
-  { id: "QUALITY_CHECK", label: "Controle Qualidade", dot: "bg-purple-600", badge: "bg-purple-50 text-purple-800 border-purple-200", group: "WORKBENCH" },
+  { id: "APPROVED", label: "Aprovado / Bancada", dot: "bg-indigo-600", badge: "bg-indigo-50 text-indigo-800 border-indigo-200", group: "WORKBENCH" },
   { id: "READY_FOR_PICKUP", label: "Pronto p/ Retirada", dot: "bg-teal-600", badge: "bg-teal-50 text-teal-800 border-teal-200", group: "DISPATCH" },
   { id: "DELIVERED", label: "Finalizado / Entregue", dot: "bg-[#181816]", badge: "bg-[#181816] text-white border-[#181816]", group: "DISPATCH" },
+  { id: "CANCELED", label: "Canceladas", dot: "bg-rose-600", badge: "bg-rose-50 text-rose-800 border-rose-200", group: "CANCELED" },
 ];
 
 const STATUS_ORDER = [
   "TRIAGE",
-  "ANALYSIS",
   "AWAITING_APPROVAL",
   "APPROVED",
-  "IN_MAINTENANCE",
-  "QUALITY_CHECK",
   "READY_FOR_PICKUP",
   "DELIVERED",
+  "CANCELED",
 ];
 
-type ViewFilterType = "ALL" | "WORKBENCH" | "INTAKE" | "DISPATCH";
+type ViewFilterType = "ALL" | "WORKBENCH" | "INTAKE" | "DISPATCH" | "CANCELED";
 
 export default function KanbanPage() {
   const router = useRouter();
@@ -68,6 +66,7 @@ export default function KanbanPage() {
   const [searchFilter, setSearchFilter] = useState("");
   const [whatsAppOs, setWhatsAppOs] = useState<any | null>(null);
   const [whatsAppTemplate, setWhatsAppTemplate] = useState<"QUOTE" | "READY" | "ENTRY">("QUOTE");
+  const [cancelOs, setCancelOs] = useState<any | null>(null);
   const [stockErrorModal, setStockErrorModal] = useState<{
     isOpen: boolean;
     osNumber: number | string;
@@ -84,32 +83,30 @@ export default function KanbanPage() {
       const data = await fetchApi("/service-orders/kanban");
       const baseColumns: Record<string, any[]> = {
         TRIAGE: [],
-        ANALYSIS: [],
         AWAITING_APPROVAL: [],
         APPROVED: [],
-        IN_MAINTENANCE: [],
-        QUALITY_CHECK: [],
         READY_FOR_PICKUP: [],
         DELIVERED: [],
         CANCELED: [],
-        ...(data || {}),
       };
 
-      // Se houver ordens em AWAITING_PARTS, transfere automaticamente para APPROVED
-      if (baseColumns.AWAITING_PARTS && Array.isArray(baseColumns.AWAITING_PARTS)) {
-        baseColumns.APPROVED = [
-          ...(baseColumns.APPROVED || []),
-          ...baseColumns.AWAITING_PARTS.map((o: any) => ({ ...o, status: "APPROVED" })),
-        ];
-        delete baseColumns.AWAITING_PARTS;
-      }
+      const rawData = data || {};
+      Object.keys(rawData).forEach((key) => {
+        const list = Array.isArray(rawData[key]) ? rawData[key] : [];
+        if (key === "ANALYSIS") {
+          baseColumns.TRIAGE.push(...list.map((o: any) => ({ ...o, status: "TRIAGE" })));
+        } else if (key === "AWAITING_PARTS" || key === "IN_MAINTENANCE" || key === "QUALITY_CHECK") {
+          baseColumns.APPROVED.push(...list.map((o: any) => ({ ...o, status: "APPROVED" })));
+        } else if (baseColumns[key]) {
+          baseColumns[key].push(...list);
+        } else {
+          baseColumns.TRIAGE.push(...list);
+        }
+      });
 
-
-
-      // Sanitização estrita: OSs que ainda NÃO entraram em bancada (TRIAGE, ANALYSIS, AWAITING_APPROVAL, APPROVED)
-      // JAMAIS devem ter stockDeducted = true
+      // Sanitização estrita: OSs em TRIAGE e AWAITING_APPROVAL não devem ter stockDeducted = true
       Object.keys(baseColumns).forEach((statusKey) => {
-        if (!["IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(statusKey)) {
+        if (["TRIAGE", "AWAITING_APPROVAL", "CANCELED"].includes(statusKey)) {
           baseColumns[statusKey] = baseColumns[statusKey].map((order: any) => ({
             ...order,
             stockDeducted: false,
@@ -118,6 +115,7 @@ export default function KanbanPage() {
       });
 
       setColumns(baseColumns);
+
     } catch (err) {
       console.error("Erro ao carregar kanban:", err);
     } finally {
@@ -173,20 +171,15 @@ export default function KanbanPage() {
       if (itemIndex === -1) return prev;
 
       const [item] = sourceList.splice(itemIndex, 1);
-      
-      // Regra Antifalha Bancada: Se transicionar para IN_MAINTENANCE, marca baixa única.
-      // Se for CANCELED, desmarca baixa. Em outras colunas de bancada, preserva o status existente.
-      let nextStockDeducted = item.stockDeducted;
-      if (toStatus === "IN_MAINTENANCE") {
-        nextStockDeducted = true;
-      } else if (toStatus === "CANCELED") {
-        nextStockDeducted = false;
-      }
 
+      // Regra Antifalha Bancada: Se transicionar para APPROVED (ou estágios posteriores), marca baixa única.
+
+      // Se for CANCELED ou etapas anteriores, desmarca.
+      const isApprovedOrAfter = ["APPROVED", "READY_FOR_PICKUP", "DELIVERED"].includes(toStatus);
       const updatedItem = {
         ...item,
         status: toStatus,
-        stockDeducted: toStatus === "CANCELED" ? false : item.stockDeducted,
+        stockDeducted: toStatus === "CANCELED" ? false : (isApprovedOrAfter ? true : item.stockDeducted),
         stockError: null,
       };
       movedOrderTitle = `OS #${item.osNumber}`;
@@ -245,15 +238,16 @@ export default function KanbanPage() {
       });
 
       // Confirmação de baixa física de peças apenas após validação com sucesso pela API
-      if (toStatus === "IN_MAINTENANCE") {
+      if (toStatus === "APPROVED") {
         setColumns((prev: any) => {
-          const list = [...(prev["IN_MAINTENANCE"] || [])];
+          const list = [...(prev["APPROVED"] || [])];
           const idx = list.findIndex((o: any) => o.id === orderId);
           if (idx !== -1) {
             list[idx] = { ...list[idx], stockDeducted: true, stockError: null };
           }
-          return { ...prev, IN_MAINTENANCE: list };
+          return { ...prev, APPROVED: list };
         });
+
 
         if (typeof window !== "undefined") {
           const savedOrders = localStorage.getItem("torxos_service_orders") || localStorage.getItem("evorix_service_orders");
@@ -378,16 +372,30 @@ export default function KanbanPage() {
   const visibleColumns = KANBAN_COLUMNS.filter((col) => {
     if (viewFilter === "ALL") return true;
     if (viewFilter === "WORKBENCH") {
-      return ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK"].includes(col.id);
+      return ["APPROVED"].includes(col.id);
     }
     if (viewFilter === "INTAKE") {
-      return ["TRIAGE", "ANALYSIS", "AWAITING_APPROVAL"].includes(col.id);
+      return ["TRIAGE", "AWAITING_APPROVAL"].includes(col.id);
     }
     if (viewFilter === "DISPATCH") {
       return ["READY_FOR_PICKUP", "DELIVERED"].includes(col.id);
     }
-    return true;
+    if (viewFilter === "CANCELED") {
+      return col.id === "CANCELED";
+    }
+    return col.id !== "CANCELED";
+
   });
+
+  const handleConfirmCancel = async (reason: string, notes: string) => {
+    if (!cancelOs) return;
+    try {
+      await moveOrderToStatus(cancelOs.id, cancelOs.status, "CANCELED");
+      showToast(`OS #${cancelOs.osNumber} cancelada com sucesso!`);
+    } catch (err: any) {
+      showToast("Erro ao cancelar OS: " + (err.message || "Tente novamente"));
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -480,7 +488,7 @@ export default function KanbanPage() {
                   : "hover:text-[#1C1C1A]"
               }`}
             >
-              Todas as Etapas (8)
+              Todas as Etapas (5)
             </button>
             <button
               onClick={() => setViewFilter("WORKBENCH")}
@@ -491,7 +499,7 @@ export default function KanbanPage() {
               }`}
             >
               <Wrench className="w-3 h-3 text-amber-300" />
-              <span>Foco Bancada Ativa (3)</span>
+              <span>Bancada Ativa (1)</span>
             </button>
             <button
               onClick={() => setViewFilter("INTAKE")}
@@ -501,7 +509,7 @@ export default function KanbanPage() {
                   : "hover:text-[#1C1C1A]"
               }`}
             >
-              Triagem & Entrada (3)
+              Triagem & Orçamentos (2)
             </button>
             <button
               onClick={() => setViewFilter("DISPATCH")}
@@ -512,6 +520,18 @@ export default function KanbanPage() {
               }`}
             >
               Prontos & Entrega (2)
+            </button>
+
+            <button
+              onClick={() => setViewFilter("CANCELED")}
+              className={`px-3 py-1 rounded-lg transition flex items-center gap-1.5 ${
+                viewFilter === "CANCELED"
+                  ? "bg-rose-700 text-white shadow-xs"
+                  : "hover:text-rose-700 text-rose-700/80"
+              }`}
+            >
+              <Ban className="w-3 h-3" />
+              <span>Canceladas ({columns.CANCELED?.length || 0})</span>
             </button>
           </div>
 
@@ -636,8 +656,8 @@ export default function KanbanPage() {
                             <Smartphone className="w-3.5 h-3.5 text-[#71716C] shrink-0" strokeWidth={1.75} />
                             <span className="line-clamp-1">{order.deviceBrand} {order.deviceModel}</span>
                           </div>
-                          {/* 1. Badge VERDE: Apenas se estiver em Bancada ou etapas posteriores E estoque tiver sido baixado */}
-                          {order.stockDeducted && ["IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(col.id) && (
+                          {/* 1. Badge VERDE: Peças baixadas */}
+                          {order.stockDeducted && ["APPROVED", "READY_FOR_PICKUP", "DELIVERED"].includes(col.id) && (
                             <span
                               className="shrink-0 text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-1"
                               title="Peças baixadas do estoque na bancada (blindagem contra baixa duplicada)"
@@ -646,6 +666,7 @@ export default function KanbanPage() {
                               <span>Peças baixadas</span>
                             </span>
                           )}
+
 
                           {/* 2. Badge VERMELHO: Marcação referente ao erro de recusa de bancada */}
                           {order.stockError && (
@@ -754,7 +775,21 @@ export default function KanbanPage() {
                             <Printer className="w-3.5 h-3.5 text-[#71716C]" strokeWidth={1.75} />
                           </Link>
 
-                          {col.id !== "DELIVERED" && (
+                          {col.id !== "DELIVERED" && col.id !== "CANCELED" && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCancelOs({ ...order, status: col.id });
+                              }}
+                              title="Cancelar Ordem de Serviço"
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition border border-rose-200 cursor-pointer"
+                            >
+                              <Ban className="w-3.5 h-3.5 text-rose-600" strokeWidth={1.75} />
+                            </button>
+                          )}
+
+                          {col.id !== "DELIVERED" && col.id !== "CANCELED" && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -776,6 +811,24 @@ export default function KanbanPage() {
           );
         })}
       </div>
+
+      {/* Modal de Cancelamento de OS */}
+      {cancelOs && (
+        <CancelOsModal
+          isOpen={!!cancelOs}
+          onClose={() => setCancelOs(null)}
+          onConfirm={handleConfirmCancel}
+          osData={{
+            id: cancelOs.id,
+            osNumber: cancelOs.osNumber,
+            clientName: cancelOs.client?.name,
+            deviceBrand: cancelOs.deviceBrand,
+            deviceModel: cancelOs.deviceModel,
+            netTotal: cancelOs.netTotal,
+            status: cancelOs.status,
+          }}
+        />
+      )}
 
       {/* Modal Interativo de Disparo WhatsApp */}
       {whatsAppOs && (

@@ -154,8 +154,9 @@ export class StockService {
           productId: product.id,
           serviceOrder: {
             createdAt: { gte: thirtyDaysAgo },
-            status: { in: ["IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"] },
+            status: { in: ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"] },
           },
+
         },
       });
 

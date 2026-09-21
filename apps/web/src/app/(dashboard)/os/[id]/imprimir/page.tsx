@@ -27,14 +27,23 @@ export default function PrintServiceOrderPage() {
   const id = params?.id as string;
 
   const [order, setOrder] = useState<any>(null);
+  const [tenantProfile, setTenantProfile] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [printFormat, setPrintFormat] = useState<"LABEL" | "THERMAL_80" | "A4">("A4");
 
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await fetchApi(`/service-orders/${id}`);
-        setOrder(data);
+        const [orderData, settingsData] = await Promise.allSettled([
+          fetchApi(`/service-orders/${id}`),
+          fetchApi("/tenant/settings"),
+        ]);
+        if (orderData.status === "fulfilled") {
+          setOrder(orderData.value);
+        }
+        if (settingsData.status === "fulfilled" && settingsData.value) {
+          setTenantProfile(settingsData.value);
+        }
       } catch (e) {
         console.error("Erro ao carregar OS para impressão:", e);
       } finally {
@@ -100,7 +109,7 @@ export default function PrintServiceOrderPage() {
 
   const cachedProfile = typeof window !== "undefined" ? (() => {
     try {
-      const c = localStorage.getItem("torxos_company_profile");
+      const c = localStorage.getItem("torxos_company_profile") || localStorage.getItem("evorix_company_profile");
       return c ? JSON.parse(c) : null;
     } catch { return null; }
   })() : null;
@@ -108,12 +117,37 @@ export default function PrintServiceOrderPage() {
   const currentUser = typeof window !== "undefined" ? getCurrentUser() : null;
 
   const tenantInfo = {
-    tradeName: order.tenant?.tradeName || cachedProfile?.tradeName || currentUser?.tenantName || "Assistência Técnica",
-    legalName: order.tenant?.legalName || cachedProfile?.legalName || "",
-    document: order.tenant?.document || cachedProfile?.document || "",
-    phone: order.tenant?.phone || cachedProfile?.phone || "",
-    email: order.tenant?.email || cachedProfile?.email || "",
-    logoUrl: order.tenant?.logoUrl || cachedProfile?.logoUrl || null,
+    tradeName:
+      tenantProfile?.tradeName ||
+      order.tenant?.tradeName ||
+      cachedProfile?.tradeName ||
+      currentUser?.tenantName ||
+      "Assistência Técnica",
+    legalName:
+      tenantProfile?.legalName ||
+      order.tenant?.legalName ||
+      cachedProfile?.legalName ||
+      "",
+    document:
+      tenantProfile?.document ||
+      order.tenant?.document ||
+      cachedProfile?.document ||
+      "",
+    phone:
+      tenantProfile?.phone ||
+      order.tenant?.phone ||
+      cachedProfile?.phone ||
+      "",
+    email:
+      tenantProfile?.email ||
+      order.tenant?.email ||
+      cachedProfile?.email ||
+      "",
+    logoUrl:
+      tenantProfile?.logoUrl ||
+      order.tenant?.logoUrl ||
+      cachedProfile?.logoUrl ||
+      null,
   };
 
   const appOrigin =
@@ -218,11 +252,24 @@ export default function PrintServiceOrderPage() {
           <div className="print-area bg-white text-black p-4 rounded-xl border border-black/20 shadow-md w-[380px] font-mono text-xs select-none">
             {/* Header Etiqueta */}
             <div className="border-b-2 border-black pb-2 mb-2 flex items-center justify-between">
-              <div>
-                <span className="font-sans font-black text-lg tracking-tight">TorxOS</span>
-                <span className="text-[10px] block font-sans uppercase font-bold text-gray-700">Controle de Bancada</span>
+              <div className="flex items-center gap-2 max-w-[240px]">
+                {tenantInfo.logoUrl && (
+                  <img
+                    src={tenantInfo.logoUrl}
+                    alt={tenantInfo.tradeName}
+                    className="max-h-7 max-w-[65px] object-contain shrink-0"
+                  />
+                )}
+                <div className="min-w-0">
+                  <span className="font-sans font-black text-sm tracking-tight truncate block uppercase">
+                    {tenantInfo.tradeName}
+                  </span>
+                  <span className="text-[9px] block font-sans uppercase font-bold text-gray-700">
+                    Controle de Bancada
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <span className="text-2xl font-black font-sans">#{displayOsNumber}</span>
                 <span className="text-[9px] block uppercase text-gray-600 font-bold">{translatePriority(order.priority)}</span>
               </div>

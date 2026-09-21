@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Req } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { ServiceOrdersService } from "./service-orders.service";
-import { ClientApproveDto } from "./dto/service-order.dto";
+import { ClientApproveDto, ClientRejectDto } from "./dto/service-order.dto";
 import { Public } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("Portal Público do Cliente (Sem Login)")
@@ -32,4 +32,16 @@ export class PublicOsController {
       clientIp: dto.clientIp || (typeof clientIp === "string" ? clientIp : undefined),
     });
   }
+
+  @Public()
+  @Post(":publicToken/reject")
+  @ApiOperation({ summary: "Recusa formal do orçamento pelo cliente com motivo opcional" })
+  @ApiResponse({ status: 200, description: "Orçamento recusado pelo cliente" })
+  async rejectOrder(
+    @Param("publicToken") publicToken: string,
+    @Body() dto: ClientRejectDto,
+  ) {
+    return this.serviceOrdersService.clientReject(publicToken, dto);
+  }
 }
+

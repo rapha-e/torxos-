@@ -9,6 +9,8 @@ import {
   AlertCircle,
   Phone,
   Zap,
+  Ban,
+  RotateCcw,
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { formatCurrency, translateOsStatus } from "@/lib/utils";
@@ -25,6 +27,8 @@ export default function PublicOrderStatusPage() {
   const [submitting, setSubmitting] = useState(false);
   const [clientSignature, setClientSignature] = useState<string | null>(null);
   const [showPixModal, setShowPixModal] = useState<boolean>(false);
+  const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
+  const [rejectReason, setRejectReason] = useState<string>("Valor do orçamento acima do planejado");
 
   useEffect(() => {
     async function loadOrder() {
@@ -32,7 +36,12 @@ export default function PublicOrderStatusPage() {
       try {
         const data = await fetchApi(`/public/os/${token}`);
         setOrder(data);
-        if (data.status === "APPROVED" || data.status === "IN_MAINTENANCE" || data.status === "READY_FOR_PICKUP" || data.status === "DELIVERED") {
+        if (
+          data.status === "APPROVED" ||
+          data.status === "IN_MAINTENANCE" ||
+          data.status === "READY_FOR_PICKUP" ||
+          data.status === "DELIVERED"
+        ) {
           setApproved(true);
         }
       } catch (e) {
@@ -64,6 +73,23 @@ export default function PublicOrderStatusPage() {
     }
   };
 
+  const handleReject = async (reason: string) => {
+    setSubmitting(true);
+    try {
+      await fetchApi(`/public/os/${token}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+      const refreshed = await fetchApi(`/public/os/${token}`);
+      setOrder(refreshed);
+      setShowRejectModal(false);
+    } catch (err: any) {
+      alert("Erro ao recusar orçamento: " + (err.message || "Tente novamente."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F9F9F7] flex items-center justify-center p-4">
@@ -89,6 +115,8 @@ export default function PublicOrderStatusPage() {
     );
   }
 
+  const isCanceled = order.status === "CANCELED";
+
   return (
     <div className="min-h-screen bg-[#F9F9F7] text-[#1C1C1A] py-12 px-4 sm:px-6">
       <div className="max-w-xl mx-auto space-y-5">
@@ -108,7 +136,7 @@ export default function PublicOrderStatusPage() {
             )}
             <div>
               <h1 className="font-bold text-sm text-[#1C1C1A]">
-                {order.tenant?.tradeName || "TorxOS Tech Center"}
+                {order.tenant?.tradeName || "Assistência Técnica"}
               </h1>
               <p className="text-[11px] text-[#71716C] flex items-center gap-1 mt-0.5">
                 <Phone className="w-3 h-3 text-[#A1A19B]" strokeWidth={1.75} />
@@ -136,7 +164,15 @@ export default function PublicOrderStatusPage() {
             </div>
             <div className="text-right">
               <span className="text-[10px] text-[#71716C] font-semibold block uppercase">Status</span>
-              <span className="text-xs font-semibold text-amber-800 bg-[#FEF3C7] px-2.5 py-0.5 rounded-full border border-[#FDE68A] inline-block mt-0.5">
+              <span
+                className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border inline-block mt-0.5 ${
+                  isCanceled
+                    ? "text-rose-800 bg-rose-50 border-rose-200"
+                    : order.status === "APPROVED" || order.status === "IN_MAINTENANCE" || order.status === "DELIVERED"
+                    ? "text-emerald-800 bg-emerald-50 border-emerald-200"
+                    : "text-amber-800 bg-[#FEF3C7] border-[#FDE68A]"
+                }`}
+              >
                 {translateOsStatus(order.status)}
               </span>
             </div>
@@ -170,33 +206,52 @@ export default function PublicOrderStatusPage() {
                   className="p-3 rounded-xl bg-[#F9F9F7] border border-[rgba(28,25,23,0.06)] flex items-center justify-between text-xs"
                 >
                   <div>
-                    <p className="font-semibold text-[#1C1C1A]">{item.description}</p>
+                    <p className={`font-semibold ${isCanceled ? "line-through text-[#71716C]" : "text-[#1C1C1A]"}`}>
+                      {item.description}
+                    </p>
                     <span className="text-[10px] text-[#71716C] uppercase font-medium">
                       {item.itemType === "PRODUCT" ? "Peça Original Certificada" : "Serviço Técnico Especializado"}
                     </span>
                   </div>
-                  <span className="font-bold text-[#1C1C1A] tabular-nums">
+                  <span className={`font-bold tabular-nums ${isCanceled ? "line-through text-[#71716C]" : "text-[#1C1C1A]"}`}>
                     {formatCurrency(item.totalAmount)}
                   </span>
                 </div>
               ))}
             </div>
 
-            {/* Totalizador Nobre */}
-            <div className="p-4 rounded-xl bg-[#181816] text-white flex items-center justify-between shadow-sm">
+            {/* Totalizador */}
+            <div className={`p-4 rounded-xl text-white flex items-center justify-between shadow-sm ${isCanceled ? "bg-stone-800 opacity-90" : "bg-[#181816]"}`}>
               <div>
-                <span className="text-xs text-amber-200 font-semibold block">Valor Total do Atendimento</span>
-                <span className="text-[11px] text-[#A1A19B]">Inclui peças com certificação e garantia de 90 dias</span>
+                <span className="text-xs text-amber-200 font-semibold block">
+                  {isCanceled ? "Orçamento Recusado" : "Valor Total do Atendimento"}
+                </span>
+                <span className="text-[11px] text-[#A1A19B]">
+                  {isCanceled ? "Nenhum valor será cobrado pelo conserto" : "Inclui peças com certificação e garantia de 90 dias"}
+                </span>
               </div>
-              <span className="text-2xl font-bold tracking-tight text-white tabular-nums">
+              <span className={`text-2xl font-bold tracking-tight tabular-nums ${isCanceled ? "line-through text-stone-400" : "text-white"}`}>
                 {formatCurrency(order.netTotal)}
               </span>
             </div>
           </div>
 
-          {/* Ação de Aprovação */}
+          {/* Ação de Aprovação / Recusa */}
           <div className="pt-3 border-t border-[rgba(28,25,23,0.07)] space-y-4">
-            {approved ? (
+            {isCanceled ? (
+              /* Estado de Orçamento Recusado / Cancelado */
+              <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 text-center space-y-2">
+                <Ban className="w-8 h-8 text-rose-600 mx-auto" strokeWidth={2} />
+                <h4 className="text-sm font-bold text-rose-950">Orçamento Não Aprovado / Recusado</h4>
+                <p className="text-xs text-rose-800 leading-relaxed max-w-md mx-auto">
+                  Este atendimento foi encerrado. Seu equipamento não foi submetido a reparos e já se encontra disponível para retirada no balcão da loja.
+                </p>
+                <div className="pt-2 text-[11px] text-[#71716C]">
+                  Central da loja: <strong>{order.tenant?.phone || "(11) 98888-7766"}</strong>
+                </div>
+              </div>
+            ) : approved ? (
+              /* Estado de Orçamento Aprovado */
               <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
                 <CheckCircle2 className="w-8 h-8 text-emerald-700 mx-auto" strokeWidth={2} />
                 <h4 className="text-sm font-bold text-emerald-950">Orçamento Aprovado com Sucesso!</h4>
@@ -226,6 +281,7 @@ export default function PublicOrderStatusPage() {
                 </button>
               </div>
             ) : (
+              /* Ações quando ainda aguarda aprovação */
               <div className="space-y-4">
                 {/* Canvas de Assinatura Digital do Cliente */}
                 <SignatureCanvas
@@ -237,7 +293,7 @@ export default function PublicOrderStatusPage() {
                   }}
                 />
 
-                <div className="text-center space-y-2">
+                <div className="space-y-2">
                   <button
                     onClick={handleApprove}
                     disabled={submitting}
@@ -246,8 +302,19 @@ export default function PublicOrderStatusPage() {
                     <CheckCircle2 className="w-4 h-4" strokeWidth={2} />
                     <span>{submitting ? "Processando aprovação..." : "Aprovar Orçamento e Iniciar Reparo"}</span>
                   </button>
-                  <p className="text-[11px] text-[#71716C]">
-                    Ao confirmar, você formaliza a autorização de reparo com garantia técnica de 90 dias assegurada.
+
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectModal(true)}
+                    disabled={submitting}
+                    className="w-full py-2.5 rounded-xl bg-[#F3F3EF] hover:bg-rose-50 text-[#71716C] hover:text-rose-700 font-semibold text-xs border border-[rgba(28,25,23,0.08)] hover:border-rose-200 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                    <span>Não Aprovo / Recusar Orçamento</span>
+                  </button>
+
+                  <p className="text-[11px] text-[#71716C] text-center pt-1">
+                    Ao confirmar a aprovação, você formaliza a autorização de reparo com garantia técnica de 90 dias assegurada.
                   </p>
                 </div>
               </div>
@@ -256,9 +323,65 @@ export default function PublicOrderStatusPage() {
         </div>
 
         <div className="text-center text-[10px] text-[#A1A19B]">
-          <p>TorxOS Operating System • Protocolo Digital de Atendimento</p>
+          <p>{order.tenant?.tradeName ? `${order.tenant.tradeName} • Protocolo Digital de Atendimento` : "Protocolo Digital de Atendimento"}</p>
         </div>
       </div>
+
+      {/* Modal de Confirmação de Recusa pelo Cliente */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-[rgba(28,25,23,0.1)] shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+                <Ban className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#1C1C1A]">Recusar Orçamento?</h3>
+                <p className="text-xs text-[#71716C] mt-0.5">
+                  Ao recusar, o reparo não será iniciado e o aparelho ficará disponível para retirada no balcão da loja.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <label className="font-semibold text-[#1C1C1A] block">Motivo da recusa (opcional):</label>
+              <select
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[#FAFAF8] border border-[rgba(28,25,23,0.1)] text-xs text-[#1C1C1A] focus:bg-white focus:outline-none cursor-pointer"
+              >
+                <option value="Valor do orçamento acima do planejado">Valor do orçamento acima do planejado</option>
+                <option value="Prazo de entrega superior ao necessário">Prazo de entrega superior ao necessário</option>
+                <option value="Decidi trocar ou comprar outro aparelho">Decidi trocar ou comprar outro aparelho</option>
+                <option value="Outro motivo">Outro motivo</option>
+              </select>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+              Não haverá nenhuma taxa de cancelamento e seu equipamento será devolvido no mesmo estado da entrada.
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[rgba(28,25,23,0.06)]">
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                disabled={submitting}
+                className="px-4 py-2 rounded-xl bg-white border border-[rgba(28,25,23,0.1)] text-xs font-semibold text-[#71716C] hover:bg-[#F3F3EF] cursor-pointer"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleReject(rejectReason)}
+                disabled={submitting}
+                className="px-4 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-semibold shadow-sm transition disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? "Confirmando..." : "Confirmar Recusa"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Pagamento PIX */}
       {showPixModal && (
@@ -268,7 +391,7 @@ export default function PublicOrderStatusPage() {
           amount={Number(order.netTotal) || 0}
           orderNumber={order.osNumber}
           description={`Manutenção ${order.deviceBrand || ""} ${order.deviceModel || ""}`}
-          merchantName={order.tenant?.tradeName || "TorxOS Tech Center"}
+          merchantName={order.tenant?.tradeName || "Assistência Técnica"}
           pixKey={order.tenant?.document || "12.345.678/0001-99"}
           onPaymentConfirmed={() => {
             alert("Pagamento PIX registrado com sucesso! Seu equipamento já foi liberado.");
