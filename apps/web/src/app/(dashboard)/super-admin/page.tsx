@@ -610,12 +610,26 @@ export default function SuperAdminDashboardPage() {
           </p>
         </div>
 
-        {actionSuccess && (
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            {actionSuccess}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <a
+            href="/api/v1/onboarding/whatsapp/qrcode"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold shadow-2xs transition cursor-pointer"
+            title="Conecte o número de WhatsApp que enviará as mensagens automáticas da régua de trial para os lojistas"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Conectar WhatsApp do Sistema (Régua Trial)</span>
+            <ExternalLink className="w-3 h-3 text-emerald-600" />
+          </a>
+
+          {actionSuccess && (
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              {actionSuccess}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Grid de Métricas Principais (SaaS C-Level) */}
