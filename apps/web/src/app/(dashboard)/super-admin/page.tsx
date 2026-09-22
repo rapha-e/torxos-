@@ -730,9 +730,9 @@ export default function SuperAdminDashboardPage() {
             className="px-3 py-2 text-xs rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] focus:outline-none"
           >
             <option value="ALL">Todos os Planos</option>
-            <option value="STARTER">Starter (R$ 97)</option>
-            <option value="PRO">Pro (R$ 197)</option>
-            <option value="ENTERPRISE">Enterprise (R$ 347)</option>
+            <option value="STARTER">Starter (R$ 79)</option>
+            <option value="PRO">Pro (R$ 139)</option>
+            <option value="ENTERPRISE">Enterprise (R$ 249)</option>
           </select>
         </div>
       </div>
@@ -801,9 +801,9 @@ export default function SuperAdminDashboardPage() {
                         onChange={(e) => handleUpdatePlan(tenant.id, e.target.value)}
                         className="px-2.5 py-1 text-xs font-bold rounded-lg border border-[#E5E5E0] bg-white text-[#181816] focus:outline-none cursor-pointer"
                       >
-                        <option value="STARTER">STARTER (R$ 97)</option>
-                        <option value="PRO">PRO (R$ 197)</option>
-                        <option value="ENTERPRISE">ENTERPRISE (R$ 347)</option>
+                        <option value="STARTER">STARTER (R$ 79)</option>
+                        <option value="PRO">PRO (R$ 139)</option>
+                        <option value="ENTERPRISE">ENTERPRISE (R$ 249)</option>
                       </select>
                       {tenant.monthlyPrice !== undefined && tenant.monthlyPrice !== null && (
                         <span className="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded font-mono inline-block w-fit" title="Preço negociado personalizado ativo para esta loja">
@@ -1176,9 +1176,9 @@ export default function SuperAdminDashboardPage() {
                     onChange={(e) => setEditFormData({ ...editFormData, plan: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E5E5E0] text-[#181816] font-semibold focus:outline-none focus:border-[#181816]"
                   >
-                    <option value="STARTER">STARTER (R$ 97/mês)</option>
-                    <option value="PRO">PRO (R$ 197/mês)</option>
-                    <option value="ENTERPRISE">ENTERPRISE (R$ 347/mês)</option>
+                    <option value="STARTER">STARTER (R$ 79/mês)</option>
+                    <option value="PRO">PRO (R$ 139/mês)</option>
+                    <option value="ENTERPRISE">ENTERPRISE (R$ 249/mês)</option>
                   </select>
                 </div>
                 <div>
@@ -1224,7 +1224,7 @@ export default function SuperAdminDashboardPage() {
                     step="0.01"
                     min="0"
                     placeholder={`Padrão do plano ${editFormData.plan}: R$ ${
-                      editFormData.plan === "STARTER" ? "97,00" : editFormData.plan === "ENTERPRISE" ? "347,00" : "197,00"
+                      editFormData.plan === "STARTER" ? "79,00" : editFormData.plan === "ENTERPRISE" ? "249,00" : "139,00"
                     }`}
                     value={editFormData.monthlyPrice}
                     onChange={(e) => setEditFormData({ ...editFormData, monthlyPrice: e.target.value })}

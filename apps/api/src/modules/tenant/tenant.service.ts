@@ -385,9 +385,9 @@ export class TenantService {
     let totalOs = 0;
 
     const planPrices: Record<string, number> = {
-      STARTER: 97,
-      PRO: 197,
-      ENTERPRISE: 347,
+      STARTER: 79,
+      PRO: 139,
+      ENTERPRISE: 249,
     };
 
     const formattedTenants = tenants.map((t) => {
@@ -437,7 +437,7 @@ export class TenantService {
         ? customMonthlyPrice
         : parsedSettings.is_founder
         ? (t.plan?.toUpperCase() === "STARTER" ? 39.90 : 59.90)
-        : (planPrices[t.plan?.toUpperCase()] ?? 197);
+        : (planPrices[t.plan?.toUpperCase()] ?? 139);
 
       if (t.isActive && !isGraceExpired && subscriptionStatus !== "SUSPENDED") {
         totalActive++;
@@ -764,13 +764,13 @@ export class TenantService {
       invoiceDueDate = new Date(lastPayment.getTime() + 30 * 24 * 60 * 60 * 1000);
     }
 
-    const planPrices: Record<string, number> = { STARTER: 97, PRO: 197, ENTERPRISE: 347 };
+    const planPrices: Record<string, number> = { STARTER: 79, PRO: 139, ENTERPRISE: 249 };
     const customMonthlyPrice = parsedSettings.monthly_price !== undefined && parsedSettings.monthly_price !== null && parsedSettings.monthly_price !== ""
       ? Number(parsedSettings.monthly_price)
       : null;
     const price = customMonthlyPrice !== null && !isNaN(customMonthlyPrice)
       ? customMonthlyPrice
-      : (planPrices[tenant.plan?.toUpperCase()] ?? 197);
+      : (planPrices[tenant.plan?.toUpperCase()] ?? 139);
 
     return {
       success: true,

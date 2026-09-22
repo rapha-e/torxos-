@@ -19,7 +19,7 @@ export interface PlanLimits {
 export const PLAN_CONFIG: Record<PlanType, PlanLimits> = {
   STARTER: {
     name: "Starter",
-    priceMonth: 97,
+    priceMonth: 79,
     maxUsers: 2,
     canUseAiMentor: false,
     canUseDRE: false,
@@ -30,7 +30,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanLimits> = {
   },
   PRO: {
     name: "Pro",
-    priceMonth: 197,
+    priceMonth: 139,
     maxUsers: 5,
     canUseAiMentor: true,
     canUseDRE: true,
@@ -41,7 +41,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanLimits> = {
   },
   ENTERPRISE: {
     name: "Enterprise",
-    priceMonth: 347,
+    priceMonth: 249,
     maxUsers: 999999, // Usuários ilimitados
     canUseAiMentor: true,
     canUseDRE: true,

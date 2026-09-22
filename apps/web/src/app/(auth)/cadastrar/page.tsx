@@ -353,9 +353,9 @@ function RegisterForm() {
                     },
                   ]
                 : [
-                    { id: "STARTER", name: "Starter", price: "R$ 97/mês", desc: "Até 2 usuários" },
-                    { id: "PRO", name: "Pro", price: "R$ 197/mês", desc: "Mais Popular", badge: "Recomendado" },
-                    { id: "ENTERPRISE", name: "Enterprise", price: "R$ 347/mês", desc: "Ilimitado + IA" },
+                    { id: "STARTER", name: "Starter", price: "R$ 79/mês", desc: "Até 2 usuários" },
+                    { id: "PRO", name: "Pro", price: "R$ 139/mês", desc: "Mais Popular", badge: "Recomendado" },
+                    { id: "ENTERPRISE", name: "Enterprise", price: "R$ 249/mês", desc: "Ilimitado + IA" },
                   ]
               ).map((p: any) => {
                 const isSelected = plan === p.id && !p.disabled;

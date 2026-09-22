@@ -18,9 +18,9 @@ export class AsaasService {
   private readonly webhookToken: string;
 
   private readonly PLAN_PRICES: Record<string, number> = {
-    STARTER: 97,
-    PRO: 197,
-    ENTERPRISE: 347,
+    STARTER: 79,
+    PRO: 139,
+    ENTERPRISE: 249,
   };
 
   constructor(
@@ -141,7 +141,7 @@ export class AsaasService {
     if (settings?.is_founder) {
       return tenant.plan?.toUpperCase() === "STARTER" ? 39.90 : 59.90;
     }
-    return this.PLAN_PRICES[tenant.plan?.toUpperCase()] ?? 197;
+    return this.PLAN_PRICES[tenant.plan?.toUpperCase()] ?? 139;
   }
 
   // =========================================================================

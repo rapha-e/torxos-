@@ -1285,7 +1285,7 @@ export default function TenantSettingsPage() {
               <div className="text-right">
                 <span className="text-xs text-[#787774] block">Valor da Mensalidade</span>
                 <span className="text-xl font-bold text-[#181816] font-mono">
-                  {planName === "ENTERPRISE" ? "R$ 347,00" : planName === "STARTER" ? "R$ 97,00" : "R$ 197,00"}
+                  {planName === "ENTERPRISE" ? "R$ 249,00" : planName === "STARTER" ? "R$ 79,00" : "R$ 139,00"}
                   <span className="text-xs font-normal text-[#787774]">/mês</span>
                 </span>
               </div>
@@ -1413,7 +1413,7 @@ export default function TenantSettingsPage() {
                 <div className="space-y-2">
                   <div className="font-bold text-sm text-white">Pro (Mais Escolhido)</div>
                   <div className="text-2xl font-bold text-white font-mono">
-                    R$ 197<span className="text-xs font-normal text-stone-400">/mês</span>
+                    R$ 139<span className="text-xs font-normal text-stone-400">/mês</span>
                   </div>
                   <p className="text-[11px] text-stone-300">
                     Solução completa para assistências técnicas em expansão com controle financeiro rigoroso.
