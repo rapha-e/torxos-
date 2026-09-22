@@ -244,7 +244,8 @@ export class AuthService {
       warranty_days_default: 90,
       subscription_status: "TRIAL",
       trial_days: 7,
-      created_via: "SELF_SERVICE_ONBOARDING",
+      is_founder: !!dto.isFounder,
+      created_via: dto.isFounder ? "FOUNDER_PROGRAM" : "SELF_SERVICE_ONBOARDING",
     };
 
     const tenant = await this.prisma.tenant.create({

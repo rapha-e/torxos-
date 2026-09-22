@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   AlertCircle,
@@ -29,6 +30,7 @@ export function FounderLeadForm({
   selectedPlan = "PRO",
   isSlotsFull = false,
 }: FounderLeadFormProps) {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -41,6 +43,8 @@ export function FounderLeadForm({
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState("");
+  const [countdown, setCountdown] = useState(3);
   const [errorMsg, setErrorMsg] = useState("");
   const [hasStartedForm, setHasStartedForm] = useState(false);
 
@@ -49,6 +53,21 @@ export function FounderLeadForm({
       setPlanInterest(selectedPlan);
     }
   }, [selectedPlan]);
+
+  useEffect(() => {
+    if (!submitted || !redirectUrl) return;
+
+    if (countdown <= 0) {
+      router.push(redirectUrl);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [submitted, countdown, redirectUrl, router]);
 
   const handleFieldFocus = () => {
     if (!hasStartedForm) {
@@ -115,6 +134,15 @@ export function FounderLeadForm({
         monthlyOrders,
       });
 
+      const mappedPlan = planInterest.toLowerCase().includes("starter")
+        ? "STARTER"
+        : planInterest.toLowerCase().includes("enterprise")
+        ? "ENTERPRISE"
+        : "PRO";
+
+      const targetUrl = `/cadastrar?founder=1&name=${encodeURIComponent(name.trim())}&company=${encodeURIComponent(companyName.trim())}&phone=${encodeURIComponent(whatsapp.trim())}&email=${encodeURIComponent(email.trim().toLowerCase())}&plan=${mappedPlan}`;
+
+      setRedirectUrl(targetUrl);
       setSubmitted(true);
     } catch (err: any) {
       setErrorMsg(err.message || "Erro ao conectar com o servidor. Tente novamente em instantes.");
@@ -185,31 +213,46 @@ export function FounderLeadForm({
     );
   }
 
-  // Estado: Sucesso Pós-Envio
+  // Estado: Sucesso Pós-Envio com Transição VIP para Cadastro
   if (submitted) {
     return (
       <section id="candidatura" className="py-20 border-t border-white/[0.08] bg-[#0C0C0E]">
         <div className="max-w-xl mx-auto px-4 text-center space-y-6">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto shadow-inner">
-            <CheckCircle2 className="w-8 h-8" />
+          <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/30 text-[#E2A336] flex items-center justify-center mx-auto shadow-inner">
+            <Sparkles className="w-8 h-8" />
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Recebemos seu interesse.
-          </h2>
+          <div className="space-y-2">
+            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#E2A336] bg-[#E2A336]/10 px-3 py-1 rounded-full border border-[#E2A336]/20">
+              Vaga VIP Reservada
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Candidatura Confirmada!
+            </h2>
+          </div>
 
           <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.07] text-left text-xs sm:text-sm text-zinc-300 leading-relaxed space-y-3">
             <p>
-              Obrigado por demonstrar interesse no <strong>Programa Fundador TorxOS</strong>.
+              Parabéns, <strong>{name}</strong>! Recebemos sua inscrição para a <strong>{companyName}</strong>.
             </p>
-            <p>
-              Nossa equipe analisará as informações enviadas e entrará em contato via WhatsApp para apresentar o sistema e verificar a aderência da sua assistência ao programa.
+            <p className="text-zinc-400 text-xs">
+              Para você já começar a organizar suas ordens de serviço imediatamente, seus dados foram pré-carregados. Falta apenas definir sua <strong>senha de acesso</strong> para ativar seu período de teste grátis de 7 dias.
             </p>
           </div>
 
-          <p className="text-[11px] text-zinc-500">
-            A análise das candidaturas é realizada por ordem de recebimento e perfil de bancada.
-          </p>
+          <div className="space-y-3 pt-2">
+            <button
+              onClick={() => router.push(redirectUrl)}
+              className="w-full py-4 rounded-xl bg-[#E2A336] hover:bg-[#EBB048] text-[#14120E] font-bold text-sm tracking-tight transition cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#E2A336]/10"
+            >
+              <span>Ativar Minha Conta VIP Agora</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <p className="text-xs text-zinc-500 flex items-center justify-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-[#E2A336]" />
+              <span>Redirecionando automaticamente em <strong>{countdown}s</strong>...</span>
+            </p>
+          </div>
         </div>
       </section>
     );

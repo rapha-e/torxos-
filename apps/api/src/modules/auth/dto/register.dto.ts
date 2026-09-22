@@ -40,4 +40,9 @@ export class RegisterTenantDto {
   @IsString()
   @IsOptional()
   plan?: string;
+
+  @ApiProperty({ example: true, description: "Indica se o lojista se cadastrou pelo Programa Fundador", required: false })
+  @IsOptional()
+  isFounder?: boolean;
 }
+

@@ -31,12 +31,25 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [plan, setPlan] = useState("PRO");
+  const isFounder = searchParams.get("founder") === "1" || searchParams.get("founder") === "true";
 
   useEffect(() => {
     const urlPlan = searchParams.get("plan");
     if (urlPlan && ["STARTER", "PRO", "ENTERPRISE"].includes(urlPlan.toUpperCase())) {
       setPlan(urlPlan.toUpperCase());
     }
+
+    const urlName = searchParams.get("name");
+    if (urlName) setName(urlName);
+
+    const urlCompany = searchParams.get("company") || searchParams.get("tradeName");
+    if (urlCompany) setTradeName(urlCompany);
+
+    const urlEmail = searchParams.get("email");
+    if (urlEmail) setEmail(urlEmail);
+
+    const urlPhone = searchParams.get("phone");
+    if (urlPhone) setPhone(maskPhone(urlPhone));
   }, [searchParams]);
 
   const [loading, setLoading] = useState(false);
@@ -94,6 +107,7 @@ function RegisterForm() {
           email,
           password,
           plan,
+          isFounder,
         }),
       });
 
@@ -122,6 +136,26 @@ function RegisterForm() {
             Cadastre sua assistência técnica e comece com <strong className="text-[#1C1C1A]">7 dias de teste grátis</strong>
           </p>
         </div>
+
+        {/* Banner de Membro Fundador se originado do Programa Fundador */}
+        {isFounder && (
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs flex items-start gap-3 animate-in fade-in">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-[#B87D18] flex items-center justify-center shrink-0 mt-0.5">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-[#8C5D08] flex items-center gap-1.5">
+                Vaga de Membro Fundador Reservada!
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-200/80 font-bold text-amber-900 uppercase">
+                  Condição Especial
+                </span>
+              </p>
+              <p className="text-[#6D5220] mt-0.5 leading-relaxed text-[11px]">
+                Seus dados foram pré-carregados com sucesso. Defina sua <strong>senha de acesso</strong> e informe o <strong>CNPJ ou CPF</strong> para ativar sua bancada com <strong>7 dias de teste grátis</strong>.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Benefícios Rápidos em Destaque */}
         <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-[#F4F4F0] border border-[rgba(28,25,23,0.06)] text-[11px] text-[#444441]">
