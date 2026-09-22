@@ -69,9 +69,9 @@ if [ -n "$GIVEN_TOKEN" ]; then
     echo -e "${GREEN}✅ Webhook Token atualizado no $ENV_FILE!${NC}"
 fi
 
-# 4. Rebuild e reinicialização dos contêineres API e WEB
-echo -e "\n${BLUE}📦 3. Compilando e reiniciando a API e o Frontend Web...${NC}"
-docker compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d --build evorix_api evorix_web
+# 4. Rebuild e reinicialização dos contêineres API, WEB e Nginx (SSL)
+echo -e "\n${BLUE}📦 3. Compilando e reiniciando a API, Frontend Web e Nginx Gateway SSL...${NC}"
+docker compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d --build evorix_api evorix_web evorix_nginx
 
 echo -e "\n${BLUE}⏳ 4. Aguardando inicialização dos serviços (10 segundos)...${NC}"
 sleep 10
