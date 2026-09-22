@@ -87,7 +87,7 @@ export function FounderLeadForm({
     setLoading(true);
 
     try {
-      const res = await fetch("/api/founders", {
+      const res = await fetch("/web-api/founders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

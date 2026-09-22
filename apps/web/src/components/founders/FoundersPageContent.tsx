@@ -33,7 +33,7 @@ export function FoundersPageContent() {
     // Consulta status real de vagas na API
     async function loadSlots() {
       try {
-        const res = await fetch("/api/founders");
+        const res = await fetch("/web-api/founders");
         if (res.ok) {
           const data = await res.json();
           if (typeof data.availableSlots === "number") {
