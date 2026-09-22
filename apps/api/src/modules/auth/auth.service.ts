@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable, UnauthorizedException, ForbiddenException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "../../prisma/prisma.service";
 import { OnboardingService } from "../onboarding/onboarding.service";
 import { MailService } from "../mail/mail.service";
 import { LoginDto, RefreshTokenDto } from "./dto/login.dto";
+import { SetupMasterDto } from "./dto/setup-master.dto";
 
 @Injectable()
 export class AuthService {
@@ -338,6 +339,98 @@ export class AuthService {
         tenantId: tenant.id,
         tenantName: tenant.tradeName,
         plan: tenant.plan,
+      },
+    };
+  }
+
+  /**
+   * Consulta se o sistema ainda não possui nenhum Super Admin (Dono do Software)
+   */
+  async getSetupStatus() {
+    const superAdminCount = await this.prisma.user.count({
+      where: { role: "SUPER_ADMIN" },
+    });
+    return {
+      needsSetup: superAdminCount === 0,
+      superAdminCount,
+    };
+  }
+
+  /**
+   * Cria ou promove o primeiro Dono do Software (Super Admin Global)
+   * 100% independente de qualquer vínculo com perfil de empresa
+   */
+  async setupMaster(dto: SetupMasterDto) {
+    const superAdminCount = await this.prisma.user.count({
+      where: { role: "SUPER_ADMIN" },
+    });
+
+    const configuredSecret = process.env.SETUP_SECRET || process.env.JWT_SECRET || "torxos_master_setup_2026";
+    if (superAdminCount > 0 && dto.setupSecret !== configuredSecret) {
+      throw new ForbiddenException(
+        "O Dono do Software já foi inicializado no sistema. Para criar ou alterar outro Super Admin, utilize o terminal seguro da VPS ou informe a chave mestra de autorização."
+      );
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    // Se o usuário já existir, promove ele para SUPER_ADMIN e desvincula de qualquer empresa
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email },
+    });
+
+    let user;
+    if (existingUser) {
+      user = await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name: dto.name || existingUser.name,
+          role: "SUPER_ADMIN",
+          tenantId: null, // Independente de perfil de empresa
+          passwordHash,
+          isActive: true,
+        },
+      });
+    } else {
+      user = await this.prisma.user.create({
+        data: {
+          name: dto.name,
+          email,
+          passwordHash,
+          role: "SUPER_ADMIN",
+          tenantId: null, // Independente de perfil de empresa
+          isActive: true,
+        },
+      });
+    }
+
+    const payload = {
+      sub: user.id,
+      tenantId: null,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET || "torxos_super_refresh_jwt_key_2026_production_ready",
+      expiresIn: "7d",
+    });
+
+    return {
+      message: "Perfil de Dono do Software (Super Admin Global) configurado com sucesso!",
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        tenantId: null,
+        tenantName: "Plataforma Master (Dono)",
+        tenantPlan: "MASTER",
       },
     };
   }

@@ -1,13 +1,32 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Get, Body, HttpCode, HttpStatus } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
 import { LoginDto, RefreshTokenDto } from "./dto/login.dto";
+import { SetupMasterDto } from "./dto/setup-master.dto";
 import { Public } from "./guards/jwt-auth.guard";
 
 @ApiTags("Autenticação & Acessos")
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
+
+  @Public()
+  @Get("setup-status")
+  @ApiOperation({ summary: "Verifica se a plataforma já possui um Dono do Software configurado" })
+  @ApiResponse({ status: 200, description: "Status de inicialização retornado com sucesso" })
+  async getSetupStatus() {
+    return this.authService.getSetupStatus();
+  }
+
+  @Public()
+  @Post("setup-master")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Configura o primeiro Dono do Software (Super Admin Global) independente de empresa" })
+  @ApiResponse({ status: 201, description: "Super Admin criado e logado com sucesso" })
+  @ApiResponse({ status: 403, description: "O sistema já possui Dono do Software configurado" })
+  async setupMaster(@Body() dto: SetupMasterDto) {
+    return this.authService.setupMaster(dto);
+  }
 
   @Public()
   @Post("login")

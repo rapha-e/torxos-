@@ -162,6 +162,11 @@ function LoginForm() {
               <span>→</span>
             </a>
           </div>
+          <div className="pt-1">
+            <a href="/setup-master" className="text-[11px] text-[#71716C] hover:text-[#181816] transition inline-flex items-center gap-1 font-medium">
+              <span>👑 Configurar / Acessar como Dono do Software</span>
+            </a>
+          </div>
         </div>
 
         <div className="text-center text-[10px] text-[#A1A19B]">
