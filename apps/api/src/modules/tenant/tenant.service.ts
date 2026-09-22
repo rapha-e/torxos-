@@ -435,7 +435,7 @@ export class TenantService {
         : null;
       const planPrice = customMonthlyPrice !== null && !isNaN(customMonthlyPrice)
         ? customMonthlyPrice
-        : (planPrices[t.plan?.toUpperCase()] || 197);
+        : (planPrices[t.plan?.toUpperCase()] ?? 197);
 
       if (t.isActive && !isGraceExpired && subscriptionStatus !== "SUSPENDED") {
         totalActive++;
@@ -768,7 +768,7 @@ export class TenantService {
       : null;
     const price = customMonthlyPrice !== null && !isNaN(customMonthlyPrice)
       ? customMonthlyPrice
-      : (planPrices[tenant.plan?.toUpperCase()] || 197);
+      : (planPrices[tenant.plan?.toUpperCase()] ?? 197);
 
     return {
       success: true,

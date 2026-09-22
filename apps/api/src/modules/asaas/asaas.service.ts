@@ -138,7 +138,7 @@ export class AsaasService {
     if (settings?.monthly_price !== undefined && settings?.monthly_price !== null && settings?.monthly_price !== "" && !isNaN(Number(settings.monthly_price))) {
       return Number(settings.monthly_price);
     }
-    return this.PLAN_PRICES[tenant.plan?.toUpperCase()] || 197;
+    return this.PLAN_PRICES[tenant.plan?.toUpperCase()] ?? 197;
   }
 
   // =========================================================================
