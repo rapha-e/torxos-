@@ -136,8 +136,6 @@ export function FounderLeadForm({
 
       const mappedPlan = planInterest.toLowerCase().includes("starter")
         ? "STARTER"
-        : planInterest.toLowerCase().includes("enterprise")
-        ? "ENTERPRISE"
         : "PRO";
 
       const targetUrl = `/cadastrar?founder=1&name=${encodeURIComponent(name.trim())}&company=${encodeURIComponent(companyName.trim())}&phone=${encodeURIComponent(whatsapp.trim())}&email=${encodeURIComponent(email.trim().toLowerCase())}&plan=${mappedPlan}`;
@@ -424,10 +422,8 @@ export function FounderLeadForm({
                 onChange={(e) => setPlanInterest(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#17171B] border border-white/[0.08] text-white text-xs focus:outline-none focus:border-[#E2A336] transition font-medium"
               >
-                <option value="Starter">Starter — R$ 39,90/mês (Condição Fundador)</option>
                 <option value="PRO">PRO — R$ 59,90/mês (Recomendado • AI Mentor & Kanban)</option>
-                <option value="Enterprise">Enterprise — Sob avaliação (Multi-lojas / Filiais)</option>
-                <option value="Ainda não sei">Ainda não sei (Decidir durante a conversa)</option>
+                <option value="Starter">Starter — R$ 39,90/mês (Condição Especial Fundador)</option>
               </select>
             </div>
 

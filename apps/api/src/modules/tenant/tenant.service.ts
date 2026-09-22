@@ -435,6 +435,8 @@ export class TenantService {
         : null;
       const planPrice = customMonthlyPrice !== null && !isNaN(customMonthlyPrice)
         ? customMonthlyPrice
+        : parsedSettings.is_founder
+        ? (t.plan?.toUpperCase() === "STARTER" ? 39.90 : 59.90)
         : (planPrices[t.plan?.toUpperCase()] ?? 197);
 
       if (t.isActive && !isGraceExpired && subscriptionStatus !== "SUSPENDED") {

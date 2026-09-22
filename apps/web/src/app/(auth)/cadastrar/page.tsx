@@ -36,7 +36,13 @@ function RegisterForm() {
   useEffect(() => {
     const urlPlan = searchParams.get("plan");
     if (urlPlan && ["STARTER", "PRO", "ENTERPRISE"].includes(urlPlan.toUpperCase())) {
-      setPlan(urlPlan.toUpperCase());
+      if (isFounder && urlPlan.toUpperCase() === "ENTERPRISE") {
+        setPlan("PRO");
+      } else {
+        setPlan(urlPlan.toUpperCase());
+      }
+    } else if (isFounder) {
+      setPlan("PRO");
     }
 
     const urlName = searchParams.get("name");
@@ -50,7 +56,7 @@ function RegisterForm() {
 
     const urlPhone = searchParams.get("phone");
     if (urlPhone) setPhone(maskPhone(urlPhone));
-  }, [searchParams]);
+  }, [searchParams, isFounder]);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -315,32 +321,83 @@ function RegisterForm() {
 
           {/* Seleção do Plano */}
           <div className="pt-2">
-            <label className="block text-[#1C1C1A] font-semibold mb-1.5">Escolha seu Plano Inicial (7 Dias Grátis)</label>
+            <label className="block text-[#1C1C1A] font-semibold mb-1.5">
+              {isFounder
+                ? "Escolha seu Plano do Programa Fundador (7 Dias Grátis com Valor Travado)"
+                : "Escolha seu Plano Inicial (7 Dias Grátis)"}
+            </label>
             <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: "STARTER", name: "Starter", price: "R$ 97/mês", desc: "Até 2 usuários" },
-                { id: "PRO", name: "Pro", price: "R$ 197/mês", desc: "Mais Popular", badge: "Recomendado" },
-                { id: "ENTERPRISE", name: "Enterprise", price: "R$ 347/mês", desc: "Ilimitado + IA" },
-              ].map((p) => {
-                const isSelected = plan === p.id;
+              {(isFounder
+                ? [
+                    {
+                      id: "STARTER",
+                      name: "Starter",
+                      price: "R$ 39,90/mês",
+                      desc: "Condição Fundador",
+                      badge: "Membro Fundador",
+                    },
+                    {
+                      id: "PRO",
+                      name: "Pro",
+                      price: "R$ 59,90/mês",
+                      desc: "AI Mentor & Kanban",
+                      badge: "Recomendado",
+                    },
+                    {
+                      id: "ENTERPRISE",
+                      name: "Enterprise",
+                      price: "Indisponível",
+                      desc: "Não elegível ao Fundador",
+                      disabled: true,
+                      badge: "Indisponível",
+                    },
+                  ]
+                : [
+                    { id: "STARTER", name: "Starter", price: "R$ 97/mês", desc: "Até 2 usuários" },
+                    { id: "PRO", name: "Pro", price: "R$ 197/mês", desc: "Mais Popular", badge: "Recomendado" },
+                    { id: "ENTERPRISE", name: "Enterprise", price: "R$ 347/mês", desc: "Ilimitado + IA" },
+                  ]
+              ).map((p: any) => {
+                const isSelected = plan === p.id && !p.disabled;
                 return (
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => setPlan(p.id)}
+                    disabled={p.disabled}
+                    onClick={() => {
+                      if (!p.disabled) setPlan(p.id);
+                    }}
                     className={`p-3 rounded-xl border text-left transition relative ${
-                      isSelected
+                      p.disabled
+                        ? "bg-[#F3F3EF] text-[#A8A8A2] border-[rgba(28,25,23,0.06)] cursor-not-allowed opacity-60"
+                        : isSelected
                         ? "bg-[#181816] text-white border-[#181816] shadow-sm"
                         : "bg-[#F9F9F7] text-[#71716C] border-[rgba(28,25,23,0.08)] hover:text-[#1C1C1A]"
                     }`}
                   >
                     {p.badge && (
-                      <span className="absolute -top-2 right-2 px-1.5 py-0.5 rounded bg-amber-400 text-black font-bold text-[8px] uppercase">
+                      <span
+                        className={`absolute -top-2 right-2 px-1.5 py-0.5 rounded font-bold text-[8px] uppercase ${
+                          p.disabled
+                            ? "bg-zinc-300 text-zinc-600"
+                            : p.badge === "Recomendado"
+                            ? "bg-amber-400 text-black"
+                            : "bg-[#E2A336] text-black"
+                        }`}
+                      >
                         {p.badge}
                       </span>
                     )}
                     <div className="font-bold text-[12px]">{p.name}</div>
-                    <div className={`text-[11px] font-mono ${isSelected ? "text-amber-200" : "text-[#1C1C1A]"}`}>
+                    <div
+                      className={`text-[11px] font-mono font-semibold ${
+                        isSelected
+                          ? "text-amber-200"
+                          : p.disabled
+                          ? "text-zinc-500"
+                          : "text-[#1C1C1A]"
+                      }`}
+                    >
                       {p.price}
                     </div>
                     <div className="text-[9px] mt-0.5 opacity-80">{p.desc}</div>
@@ -348,6 +405,11 @@ function RegisterForm() {
                 );
               })}
             </div>
+            {isFounder && (
+              <p className="text-[10px] text-amber-700/90 mt-2 font-medium">
+                ⭐ Os valores especiais de <strong>R$ 39,90</strong> (Starter) e <strong>R$ 59,90</strong> (Pro) ficam travados vitaliciamente para sua assistência técnica. O plano Enterprise não participa do programa fundador.
+              </p>
+            )}
           </div>
 
           <button
