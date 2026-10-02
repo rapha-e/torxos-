@@ -254,7 +254,7 @@ export default function SalesHistoryPage() {
       </div>
 
       {/* Métricas do Caixa do Dia */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 no-print print:hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2 print:mb-4">
         <div className="bg-white p-4 rounded-2xl border border-[rgba(28,25,23,0.08)] shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-[#71716C]">
             <span className="font-medium">Faturamento Balcão Hoje</span>
@@ -329,7 +329,7 @@ export default function SalesHistoryPage() {
       </div>
 
       {/* Tabela do Histórico de Vendas */}
-      <div className="bg-white rounded-2xl border border-[rgba(28,25,23,0.08)] shadow-sm overflow-hidden no-print print:hidden">
+      <div className="bg-white rounded-2xl border border-[rgba(28,25,23,0.08)] shadow-sm overflow-hidden print:border-none print:shadow-none">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
@@ -341,7 +341,7 @@ export default function SalesHistoryPage() {
                 <th className="py-3 px-4">Pagamento</th>
                 <th className="py-3 px-4">Total Líquido</th>
                 <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-center">Ações</th>
+                <th className="py-3 px-4 text-center no-print print:hidden">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[rgba(28,25,23,0.06)]">
@@ -428,7 +428,7 @@ export default function SalesHistoryPage() {
                         )}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-4 text-center no-print print:hidden">
                       <div className="inline-flex items-center gap-1.5">
                         <button
                           onClick={() => {

@@ -317,7 +317,7 @@ export default function ServiceOrdersListPage() {
                             : order.status === "AWAITING_APPROVAL"
                             ? "bg-amber-50 text-amber-800 border-amber-200"
                             : order.status === "DELIVERED"
-                            ? "bg-[#181816] text-white border-[#181816]"
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                             : "bg-[#F3F3EF] text-[#1C1C1A] border-[rgba(28,25,23,0.06)]"
                         }`}
                       >

@@ -109,19 +109,20 @@ export class SalesService {
         },
       });
 
-      // 4. Baixa física imediata no estoque para cada produto
+      // 4. Baixa física imediata no estoque para cada produto (nunca permitindo saldo negativo)
       for (const p of productsToUpdate) {
+        const prod = await tx.product.findUnique({ where: { id: p.product.id } });
+        const curStock = Number(prod?.currentStock || 0);
+        const newStock = Math.max(0, curStock - p.quantity);
+
         const updatedProduct = await tx.product.update({
           where: { id: p.product.id },
           data: {
-            currentStock: {
-              decrement: p.quantity,
-            },
+            currentStock: newStock,
           },
         });
 
         // Atualização preditiva de risco de ruptura
-        const newStock = Number(updatedProduct.currentStock);
         const reorder = Number(updatedProduct.reorderPointCalculated);
         const safety = Number(updatedProduct.safetyStockCalculated);
 

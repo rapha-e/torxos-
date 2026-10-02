@@ -265,12 +265,13 @@ export class ServiceOrdersService {
         const qtyToDecrement = Number(item.quantity) || 1;
 
         if (item.productId) {
+          const prod = await this.prisma.product.findUnique({ where: { id: item.productId } });
+          const curStock = Number(prod?.currentStock || 0);
+          const newStock = Math.max(0, curStock - qtyToDecrement);
           await this.prisma.product.update({
             where: { id: item.productId },
             data: {
-              currentStock: {
-                decrement: qtyToDecrement,
-              },
+              currentStock: newStock,
             },
           });
           this.logger.log(`Baixa física no estoque por ID: Produto ${item.productId}, Qtd: ${qtyToDecrement} (OS #${order.osNumber})`);
@@ -285,12 +286,12 @@ export class ServiceOrdersService {
           });
 
           if (matchedProduct) {
+            const curStock = Number(matchedProduct.currentStock || 0);
+            const newStock = Math.max(0, curStock - qtyToDecrement);
             await this.prisma.product.update({
               where: { id: matchedProduct.id },
               data: {
-                currentStock: {
-                  decrement: qtyToDecrement,
-                },
+                currentStock: newStock,
               },
             });
             this.logger.log(`Baixa física no estoque por Nome: Produto ${matchedProduct.name}, Qtd: ${qtyToDecrement} (OS #${order.osNumber})`);

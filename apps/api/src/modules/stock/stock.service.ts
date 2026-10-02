@@ -25,10 +25,14 @@ export class StockService {
     if (!tenantId || tenantId.trim() === "") {
       return [];
     }
-    return this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       where: { tenantId, isActive: true },
       orderBy: { name: "asc" },
     });
+    return products.map((p) => ({
+      ...p,
+      currentStock: Math.max(0, Number(p.currentStock || 0)),
+    }));
   }
 
   async createProduct(tenantId: string, data: any) {
@@ -37,7 +41,10 @@ export class StockService {
     }
     const costPrice = Number(data.costPrice || 0);
     const salePrice = Number(data.salePrice || 0);
-    const currentStock = Number(data.currentStock || 0);
+    if (data.currentStock !== undefined && Number(data.currentStock) < 0) {
+      throw new BadRequestException("O saldo de estoque não pode ser inferior a zero.");
+    }
+    const currentStock = Math.max(0, Number(data.currentStock || 0));
     const leadTime = Number(data.supplierLeadTimeDays || 3);
 
     return this.prisma.product.create({
@@ -80,7 +87,12 @@ export class StockService {
     if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl || null;
     if (data.costPrice !== undefined) updateData.costPrice = Number(data.costPrice || 0);
     if (data.salePrice !== undefined) updateData.salePrice = Number(data.salePrice || 0);
-    if (data.currentStock !== undefined) updateData.currentStock = Number(data.currentStock || 0);
+    if (data.currentStock !== undefined) {
+      if (Number(data.currentStock) < 0) {
+        throw new BadRequestException("O saldo de estoque não pode ser inferior a zero.");
+      }
+      updateData.currentStock = Math.max(0, Number(data.currentStock || 0));
+    }
     if (data.shelfLocation !== undefined) updateData.shelfLocation = data.shelfLocation || null;
     if (data.supplierLeadTimeDays !== undefined) updateData.supplierLeadTimeDays = Number(data.supplierLeadTimeDays || 3);
 

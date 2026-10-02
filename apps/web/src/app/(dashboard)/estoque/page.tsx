@@ -203,6 +203,11 @@ export default function StockCatalogPage() {
     e.preventDefault();
     if (!name.trim()) return;
 
+    if (parseFloat(currentStock) < 0) {
+      showToast("O saldo de estoque não pode ser inferior a zero.");
+      return;
+    }
+
     setSubmitting(true);
 
     if (editingProduct) {
@@ -215,7 +220,7 @@ export default function StockCatalogPage() {
         imageUrl: imageUrl || null,
         costPrice: parseFloat(costPrice) || 0,
         salePrice: parseFloat(salePrice) || 0,
-        currentStock: parseFloat(currentStock) || 0,
+        currentStock: Math.max(0, parseFloat(currentStock) || 0),
         shelfLocation: shelfLocation.trim() || "Bancada Central",
         supplierLeadTimeDays: parseInt(leadTimeDays) || 3,
       };
@@ -273,7 +278,7 @@ export default function StockCatalogPage() {
       imageUrl: imageUrl || null,
       costPrice: parseFloat(costPrice) || 0,
       salePrice: parseFloat(salePrice) || 0,
-      currentStock: parseFloat(currentStock) || 0,
+      currentStock: Math.max(0, parseFloat(currentStock) || 0),
       shelfLocation: shelfLocation.trim() || "Bancada Central",
       supplierLeadTimeDays: parseInt(leadTimeDays) || 3,
       stockoutRiskStatus: "HEALTHY",
@@ -527,7 +532,7 @@ export default function StockCatalogPage() {
                         {item.shelfLocation || "Bancada Central"}
                       </td>
                       <td className="py-3.5 px-4 text-center font-bold text-[#1C1C1A] tabular-nums">
-                        {item.currentStock} un
+                        {Math.max(0, Number(item.currentStock || 0))} un
                       </td>
                       <td className="py-3.5 px-4 text-right text-[#71716C] tabular-nums">
                         {formatCurrency(item.costPrice)}
@@ -751,9 +756,15 @@ export default function StockCatalogPage() {
                     </label>
                     <input
                       type="number"
+                      min="0"
+                      step="any"
                       value={currentStock}
-                      onChange={(e) => setCurrentStock(e.target.value)}
-                      placeholder="1"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (parseFloat(val) < 0) return;
+                        setCurrentStock(val);
+                      }}
+                      placeholder="0"
                       className="w-full px-3 py-2 rounded-xl bg-white border border-[rgba(28,25,23,0.12)] focus:border-[#181816] focus:outline-none text-[#1C1C1A] tabular-nums font-semibold"
                     />
                   </div>

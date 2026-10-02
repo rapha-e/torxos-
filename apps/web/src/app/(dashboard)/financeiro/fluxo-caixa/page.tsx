@@ -48,6 +48,7 @@ export default function CashFlowPage() {
   const [isDeletingBank, setIsDeletingBank] = useState(false);
 
   const [activeMovementTab, setActiveMovementTab] = useState<"SETTLED" | "PENDING">("SETTLED");
+  const [projectionDays, setProjectionDays] = useState<30 | 60 | 90>(30);
 
   // Helper: Identifica se a conta é do tipo Caixa (Gaveta/Balcão)
   const isCashAccount = (acc: any) => {
@@ -71,38 +72,22 @@ export default function CashFlowPage() {
       // 2. Busca também a lista completa de títulos
       const transList = await fetchApi("/finance/transactions");
       
-      if (Array.isArray(transList) && transList.length > 0) {
-        const pending = transList.filter((t: any) => t.status === "PENDING" || !t.status);
-        const settled = transList.filter((t: any) => t.status === "SETTLED");
-        const sumRec = pending
-          .filter((t: any) => t.transactionType === "RECEIVABLE")
-          .reduce((sum: number, t: any) => sum + Number(t.netAmount || 0), 0);
-        const sumPay = pending
-          .filter((t: any) => t.transactionType === "PAYABLE")
-          .reduce((sum: number, t: any) => sum + Number(t.netAmount || 0), 0);
+      const pending = Array.isArray(transList) && transList.length > 0
+        ? transList.filter((t: any) => t.status === "PENDING" || !t.status)
+        : (res?.upcomingTransactions || []);
 
-        const baseBal = res && typeof res.currentTotalBalance === "number" ? res.currentTotalBalance : 0;
-        
-        setData({
-          currentTotalBalance: baseBal,
-          projectedReceivables: sumRec,
-          projectedPayables: sumPay,
-          projectedFinalBalance: baseBal + sumRec - sumPay,
-          accounts: res?.accounts || [],
-          upcomingTransactions: pending,
-          settledTransactions: settled.length > 0 ? settled : (res?.recentSettledTransactions || []),
-        });
-      } else {
-        setData({
-          currentTotalBalance: res?.currentTotalBalance || 0,
-          projectedReceivables: res?.projectedReceivables || 0,
-          projectedPayables: res?.projectedPayables || 0,
-          projectedFinalBalance: res?.projectedFinalBalance || 0,
-          accounts: res?.accounts || [],
-          upcomingTransactions: res?.upcomingTransactions || [],
-          settledTransactions: res?.recentSettledTransactions || [],
-        });
-      }
+      const settled = Array.isArray(transList) && transList.length > 0
+        ? transList.filter((t: any) => t.status === "SETTLED")
+        : (res?.recentSettledTransactions || []);
+
+      const baseBal = res && typeof res.currentTotalBalance === "number" ? res.currentTotalBalance : 0;
+      
+      setData({
+        currentTotalBalance: baseBal,
+        accounts: res?.accounts || [],
+        allPendingTransactions: pending,
+        settledTransactions: settled,
+      });
     } catch (err) {
       console.error("Erro ao carregar fluxo de caixa:", err);
     } finally {
@@ -199,13 +184,37 @@ export default function CashFlowPage() {
     loadCashFlow();
   }, []);
 
-  const d = data || {
-    currentTotalBalance: 0,
-    projectedReceivables: 0,
-    projectedPayables: 0,
-    projectedFinalBalance: 0,
-    accounts: [],
-    upcomingTransactions: [],
+  const allPending = data?.allPendingTransactions || [];
+  
+  // Filtra títulos futuros pendentes pelo horizonte de dias selecionado (30, 60 ou 90 dias)
+  const upcomingFiltered = allPending.filter((t: any) => {
+    if (!t.dueDate) return true;
+    const due = new Date(t.dueDate);
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + projectionDays);
+    maxDate.setHours(23, 59, 59, 999);
+    return due <= maxDate;
+  });
+
+  const sumRec = upcomingFiltered
+    .filter((t: any) => t.transactionType === "RECEIVABLE")
+    .reduce((sum: number, t: any) => sum + Number(t.netAmount || 0), 0);
+
+  const sumPay = upcomingFiltered
+    .filter((t: any) => t.transactionType === "PAYABLE")
+    .reduce((sum: number, t: any) => sum + Number(t.netAmount || 0), 0);
+
+  const currentTotalBalance = data?.currentTotalBalance || 0;
+  const projectedFinalBalance = currentTotalBalance + sumRec - sumPay;
+
+  const d = {
+    currentTotalBalance,
+    projectedReceivables: sumRec,
+    projectedPayables: sumPay,
+    projectedFinalBalance,
+    accounts: data?.accounts || [],
+    upcomingTransactions: upcomingFiltered,
+    settledTransactions: data?.settledTransactions || [],
   };
 
   return (
@@ -213,7 +222,7 @@ export default function CashFlowPage() {
       {/* Cabeçalho Oficial Exclusivo para Impressão / PDF com Perfil da Empresa */}
       <PrintHeader
         title="Fluxo de Caixa Operacional & Projetado"
-        subtitle="Posição de Contas Correntes, Caixas e Títulos Futuros"
+        subtitle={`Posição de Contas Correntes, Caixas e Títulos Futuros (${projectionDays} Dias)`}
         documentType="Tesouraria"
       />
 
@@ -255,6 +264,39 @@ export default function CashFlowPage() {
         </div>
       </div>
 
+      {/* Seletor de Horizonte de Projeção (30, 60 ou 90 dias) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white rounded-2xl border border-[rgba(28,25,23,0.08)] shadow-sm no-print print:hidden">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-[#71716C]" strokeWidth={1.75} />
+          <div>
+            <span className="text-xs font-bold text-[#1C1C1A]">Horizonte da Projeção de Caixa:</span>
+            <span className="text-[11px] text-[#71716C] ml-1.5 hidden sm:inline">
+              Previsão de títulos a vencer nos próximos {projectionDays} dias
+            </span>
+          </div>
+        </div>
+
+        <div className="inline-flex p-1 rounded-xl bg-[#F3F3EF] text-xs font-semibold">
+          {([30, 60, 90] as const).map((days) => (
+            <button
+              key={days}
+              type="button"
+              onClick={() => setProjectionDays(days)}
+              className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                projectionDays === days
+                  ? "bg-[#181816] text-white shadow-sm"
+                  : "text-[#71716C] hover:text-[#181816]"
+              }`}
+            >
+              <span>{days} Dias</span>
+              {projectionDays === days && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Cards de Projeção com Tabular Nums */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="evorix-card p-5">
@@ -266,19 +308,19 @@ export default function CashFlowPage() {
         <div className="evorix-card p-5">
           <span className="text-[11px] text-emerald-800 font-semibold uppercase tracking-wider">(+) Entradas Previstas</span>
           <p className="text-2xl font-bold text-emerald-800 mt-1 tabular-nums">{formatCurrency(d.projectedReceivables)}</p>
-          <span className="text-[11px] text-[#71716C]">Recebíveis em carteira</span>
+          <span className="text-[11px] text-[#71716C]">Recebíveis em até {projectionDays} dias</span>
         </div>
 
         <div className="evorix-card p-5">
           <span className="text-[11px] text-rose-800 font-semibold uppercase tracking-wider">(-) Saídas Previstas</span>
           <p className="text-2xl font-bold text-rose-700 mt-1 tabular-nums">{formatCurrency(d.projectedPayables)}</p>
-          <span className="text-[11px] text-[#71716C]">Fornecedores e custos fixos</span>
+          <span className="text-[11px] text-[#71716C]">A pagar em até {projectionDays} dias</span>
         </div>
 
         <div className="evorix-card p-5">
           <span className="text-[11px] text-[#1C1C1A] font-semibold uppercase tracking-wider">(=) Saldo Projetado</span>
           <p className="text-2xl font-bold text-[#1C1C1A] mt-1 tabular-nums">{formatCurrency(d.projectedFinalBalance)}</p>
-          <span className="text-[11px] text-emerald-800 font-semibold">Superávit previsto</span>
+          <span className="text-[11px] text-emerald-800 font-semibold">Posição em {projectionDays} dias</span>
         </div>
       </div>
 
@@ -617,7 +659,7 @@ export default function CashFlowPage() {
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span>Previsão Futura (A Receber / Pagar)</span>
+              <span>Previsão Futura ({projectionDays}d)</span>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-[#FAF9F6] text-[#71716C]">
                 {d.upcomingTransactions?.length || 0}
               </span>
