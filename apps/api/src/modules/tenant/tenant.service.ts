@@ -7,6 +7,8 @@ import { CancelSubscriptionDto } from "./dto/cancel-subscription.dto";
 import { AsaasService } from "../asaas/asaas.service";
 import { getPlanMaxUsers } from "../../common/plan-rules";
 import * as bcrypt from "bcrypt";
+import * as fs from "fs";
+import * as path from "path";
 
 @Injectable()
 export class TenantService {
@@ -1429,4 +1431,80 @@ export class TenantService {
       });
     } catch {}
   }
+
+  // =========================================================================
+  // COMUNICADOS GLOBAIS DO SISTEMA (BROADCAST PARA ASSISTÊNCIAS)
+  // =========================================================================
+
+  private getAnnouncementsFilePath(): string {
+    const dir = path.resolve(process.cwd(), "data");
+    if (!fs.existsSync(dir)) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+      } catch {}
+    }
+    return path.join(dir, "system-announcements.json");
+  }
+
+  async getSystemAnnouncements() {
+    try {
+      const filePath = this.getAnnouncementsFilePath();
+      if (!fs.existsSync(filePath)) {
+        return [];
+      }
+      const raw = fs.readFileSync(filePath, "utf-8");
+      return JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+
+  async createSystemAnnouncement(dto: {
+    title: string;
+    message: string;
+    category?: string;
+    priority?: "HIGH" | "NORMAL";
+    actionUrl?: string;
+    actionLabel?: string;
+  }) {
+    if (!dto.title || !dto.message) {
+      throw new BadRequestException("Título e mensagem são obrigatórios.");
+    }
+    const announcements = await this.getSystemAnnouncements();
+    const newAnnouncement = {
+      id: `ann-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      title: dto.title,
+      message: dto.message,
+      category: dto.category || "Aviso Importante",
+      priority: dto.priority || "NORMAL",
+      actionUrl: dto.actionUrl || null,
+      actionLabel: dto.actionLabel || null,
+      date: new Date().toLocaleDateString("pt-BR"),
+      createdAt: new Date().toISOString(),
+    };
+    announcements.unshift(newAnnouncement);
+
+    const filePath = this.getAnnouncementsFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(announcements, null, 2), "utf-8");
+
+    return {
+      success: true,
+      message: "Comunicado global publicado com sucesso!",
+      announcement: newAnnouncement,
+    };
+  }
+
+  async deleteSystemAnnouncement(id: string) {
+    let announcements = await this.getSystemAnnouncements();
+    announcements = announcements.filter((a: any) => a.id !== id);
+
+    const filePath = this.getAnnouncementsFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(announcements, null, 2), "utf-8");
+
+    return {
+      success: true,
+      message: "Comunicado removido com sucesso.",
+    };
+  }
 }
+

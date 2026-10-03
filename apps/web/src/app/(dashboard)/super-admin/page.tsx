@@ -40,11 +40,19 @@ import {
   Copy,
   Check,
   RefreshCw,
+  Megaphone,
+  Bell,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { fetchApi, getCurrentUser, getAuthToken, setAuthToken } from "@/lib/api";
 import { PasswordResetModal, PasswordResetData } from "@/components/ui/password-reset-modal";
 import { maskCpfCnpj, maskPhone } from "@/lib/masks";
+import {
+  fetchRemoteAnnouncements,
+  createBroadcastAnnouncement,
+  deleteBroadcastAnnouncement,
+  BroadcastAnnouncement,
+} from "@/lib/notifications";
 
 interface TenantItem {
   id: string;
@@ -141,6 +149,76 @@ export default function SuperAdminDashboardPage() {
   const [copiedPix, setCopiedPix] = useState(false);
   const [copiedInvoice, setCopiedInvoice] = useState(false);
 
+  // Estados para a Central de Comunicados Globais & Broadcast
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastList, setBroadcastList] = useState<BroadcastAnnouncement[]>([]);
+  const [loadingBroadcasts, setLoadingBroadcasts] = useState(false);
+  const [broadcastActiveTab, setBroadcastActiveTab] = useState<"CREATE" | "WHATSAPP" | "HISTORY">("CREATE");
+  const [broadcastForm, setBroadcastForm] = useState({
+    title: "",
+    message: "",
+    category: "Melhoria",
+    priority: "NORMAL" as "NORMAL" | "HIGH" | "URGENT",
+  });
+  const [publishingBroadcast, setPublishingBroadcast] = useState(false);
+  const [customWhatsappText, setCustomWhatsappText] = useState(
+    "🚀 *Novidade no TorxOS para sua Assistência Técnica!*\n\nOlá equipe! Acabamos de liberar uma grande atualização no sistema: agora é possível editar o valor da OS, peças e serviços direto na bancada com reaprovação automática pelo cliente!\n\nAcesse o sistema para conferir: https://torxos.tech/login"
+  );
+  const [copiedBroadcastText, setCopiedBroadcastText] = useState(false);
+
+  const loadBroadcasts = async () => {
+    setLoadingBroadcasts(true);
+    try {
+      const data = await fetchRemoteAnnouncements();
+      setBroadcastList(data);
+    } catch {
+    } finally {
+      setLoadingBroadcasts(false);
+    }
+  };
+
+  const handleCreateBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastForm.title.trim() || !broadcastForm.message.trim()) {
+      alert("Por favor, preencha o título e a mensagem do comunicado.");
+      return;
+    }
+    setPublishingBroadcast(true);
+    try {
+      await createBroadcastAnnouncement({
+        title: broadcastForm.title,
+        message: broadcastForm.message,
+        category: broadcastForm.category,
+        priority: broadcastForm.priority,
+      });
+      setActionSuccess("Comunicado publicado com sucesso no sino de todas as assistências!");
+      setBroadcastForm({
+        title: "",
+        message: "",
+        category: "Melhoria",
+        priority: "NORMAL",
+      });
+      await loadBroadcasts();
+      setBroadcastActiveTab("HISTORY");
+      setTimeout(() => setActionSuccess(""), 4000);
+    } catch (err: any) {
+      alert("Erro ao publicar comunicado: " + err.message);
+    } finally {
+      setPublishingBroadcast(false);
+    }
+  };
+
+  const handleDeleteBroadcast = async (id: string) => {
+    if (!confirm("Deseja realmente remover este comunicado das assistências?")) return;
+    try {
+      await deleteBroadcastAnnouncement(id);
+      setBroadcastList((prev) => prev.filter((b) => b.id !== id));
+      setActionSuccess("Comunicado removido com sucesso!");
+      setTimeout(() => setActionSuccess(""), 3000);
+    } catch (err: any) {
+      alert("Erro ao remover comunicado: " + err.message);
+    }
+  };
 
   useEffect(() => {
     const user = getCurrentUser();
@@ -611,6 +689,19 @@ export default function SuperAdminDashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              setShowBroadcastModal(true);
+              loadBroadcasts();
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold shadow-sm transition cursor-pointer"
+            title="Criar e enviar comunicados manuais e atualizações para todas as assistências"
+          >
+            <Megaphone className="w-3.5 h-3.5" />
+            <span>Criar Comunicado Global</span>
+          </button>
+
           <a
             href="/api/v1/onboarding/whatsapp/qrcode"
             target="_blank"
@@ -1678,6 +1769,322 @@ export default function SuperAdminDashboardPage() {
                   Fechar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Comunicados Globais & Broadcast para Assistências */}
+      {showBroadcastModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-3xl w-full border border-[#E5E5E0] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header do Modal */}
+            <div className="p-6 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <Megaphone className="w-5 h-5 text-amber-200" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-white leading-tight">
+                    Central de Comunicados & Disparos para Assistências
+                  </h3>
+                  <p className="text-xs text-amber-100 mt-0.5">
+                    Envie alertas manuais no sino do sistema ou dispare avisos via WhatsApp para os lojistas
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBroadcastModal(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Navegação entre Abas */}
+            <div className="flex border-b border-[#EBEBE8] bg-[#FBFBFA] px-6">
+              <button
+                type="button"
+                onClick={() => setBroadcastActiveTab("CREATE")}
+                className={`py-3.5 px-4 font-semibold text-xs border-b-2 transition flex items-center gap-2 cursor-pointer ${
+                  broadcastActiveTab === "CREATE"
+                    ? "border-amber-600 text-amber-900 bg-white"
+                    : "border-transparent text-[#787774] hover:text-[#181816]"
+                }`}
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span>Publicar no Sino do Sistema</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBroadcastActiveTab("WHATSAPP")}
+                className={`py-3.5 px-4 font-semibold text-xs border-b-2 transition flex items-center gap-2 cursor-pointer ${
+                  broadcastActiveTab === "WHATSAPP"
+                    ? "border-amber-600 text-amber-900 bg-white"
+                    : "border-transparent text-[#787774] hover:text-[#181816]"
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Disparo via WhatsApp</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setBroadcastActiveTab("HISTORY");
+                  loadBroadcasts();
+                }}
+                className={`py-3.5 px-4 font-semibold text-xs border-b-2 transition flex items-center gap-2 cursor-pointer ${
+                  broadcastActiveTab === "HISTORY"
+                    ? "border-amber-600 text-amber-900 bg-white"
+                    : "border-transparent text-[#787774] hover:text-[#181816]"
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Avisos Publicados ({broadcastList.length})</span>
+              </button>
+            </div>
+
+            {/* Conteúdo do Modal com Scroll */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-5">
+              {/* ABA 1: PUBLICAR NO SINO */}
+              {broadcastActiveTab === "CREATE" && (
+                <form onSubmit={handleCreateBroadcast} className="space-y-4">
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-950">
+                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Como funciona:</strong> Ao publicar aqui, o aviso aparecerá imediatamente no <strong>Sino de Notificações</strong> na barra superior de todas as assistências técnicas do sistema, com contador de não lidos!
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#181816] mb-1">
+                      Título do Comunicado / Atualização *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: 🚀 Nova Função: Edição de OS e Laudo Técnico na Bancada"
+                      value={broadcastForm.title}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, title: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E5E0] text-xs text-[#181816] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[#181816] mb-1">
+                        Categoria
+                      </label>
+                      <select
+                        value={broadcastForm.category}
+                        onChange={(e) => setBroadcastForm({ ...broadcastForm, category: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E5E5E0] text-xs text-[#181816] bg-white focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="Melhoria">✨ Nova Funcionalidade / Melhoria</option>
+                        <option value="Aviso Importante">⚠️ Aviso Importante</option>
+                        <option value="Manutenção Programada">🛠️ Manutenção Programada</option>
+                        <option value="Dica Comercial">💡 Dica Comercial / Operacional</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#181816] mb-1">
+                        Prioridade de Exibição
+                      </label>
+                      <select
+                        value={broadcastForm.priority}
+                        onChange={(e) => setBroadcastForm({ ...broadcastForm, priority: e.target.value as any })}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E5E5E0] text-xs text-[#181816] bg-white focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="NORMAL">Normal (Aba de Avisos)</option>
+                        <option value="HIGH">Alta (Destaque com Alerta Âmbar)</option>
+                        <option value="URGENT">Urgente (Destaque Máximo)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#181816] mb-1">
+                      Mensagem / Detalhes do Comunicado *
+                    </label>
+                    <textarea
+                      required
+                      rows={4}
+                      placeholder="Explique o que mudou, como utilizar a nova funcionalidade ou detalhes do aviso para os lojistas..."
+                      value={broadcastForm.message}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, message: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E5E0] text-xs text-[#181816] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowBroadcastModal(false)}
+                      className="px-4 py-2 rounded-xl border border-[#E5E5E0] text-xs font-semibold text-[#787774] hover:bg-[#FAF9F6] transition cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={publishingBroadcast}
+                      className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      <Megaphone className="w-3.5 h-3.5" />
+                      <span>{publishingBroadcast ? "Publicando..." : "Publicar Alerta no Sino de Todas as Lojas"}</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* ABA 2: DISPARO MANUAL WHATSAPP */}
+              {broadcastActiveTab === "WHATSAPP" && (
+                <div className="space-y-4">
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3 text-xs text-emerald-950">
+                    <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Disparo Rápido via WhatsApp:</strong> Personalize a mensagem abaixo e clique em <strong>"Enviar WhatsApp"</strong> ao lado da assistência desejada para abrir a conversa com 1 clique, ou copie a mensagem para colar na sua lista de transmissão.
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-[#181816]">
+                        Texto da Mensagem (WhatsApp)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(customWhatsappText);
+                          setCopiedBroadcastText(true);
+                          setTimeout(() => setCopiedBroadcastText(false), 2500);
+                        }}
+                        className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
+                      >
+                        {copiedBroadcastText ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedBroadcastText ? "Mensagem Copiada!" : "Copiar Texto Geral"}</span>
+                      </button>
+                    </div>
+                    <textarea
+                      rows={4}
+                      value={customWhatsappText}
+                      onChange={(e) => setCustomWhatsappText(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-emerald-200 text-xs text-[#181816] focus:outline-none focus:border-emerald-500 font-mono bg-emerald-50/20"
+                    />
+                  </div>
+
+                  {/* Lista de Assistências para Disparo Direto */}
+                  <div>
+                    <h4 className="text-xs font-bold text-[#181816] mb-2 flex items-center justify-between">
+                      <span>Assistências Cadastradas ({tenants.length})</span>
+                      <span className="text-[10px] text-[#787774] font-normal">Envio individual com 1 clique</span>
+                    </h4>
+
+                    <div className="max-h-60 overflow-y-auto space-y-2 border border-[#EBEBE8] rounded-2xl p-2 bg-[#FAF9F6]">
+                      {tenants.map((t) => {
+                        const cleanPhone = t.phone ? t.phone.replace(/\D/g, "") : "";
+                        const waUrl = cleanPhone
+                          ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(
+                              customWhatsappText.replace("Olá equipe!", `Olá equipe da *${t.tradeName}*!`)
+                            )}`
+                          : null;
+
+                        return (
+                          <div
+                            key={t.id}
+                            className="p-2.5 bg-white border border-[#E5E5E0] rounded-xl flex items-center justify-between gap-3 text-xs shadow-2xs hover:border-emerald-300 transition"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-[#181816] truncate">{t.tradeName}</p>
+                              <p className="text-[11px] text-[#787774]">
+                                {t.phone ? maskPhone(t.phone) : "Sem telefone"} • {t.email}
+                              </p>
+                            </div>
+
+                            {waUrl ? (
+                              <a
+                                href={waUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
+                              >
+                                <Send className="w-3 h-3" />
+                                <span>Enviar WhatsApp</span>
+                              </a>
+                            ) : (
+                              <span className="text-[10px] text-neutral-400 font-medium px-2 py-1 bg-neutral-100 rounded">
+                                Sem Tel
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ABA 3: HISTÓRICO DE AVISOS */}
+              {broadcastActiveTab === "HISTORY" && (
+                <div className="space-y-3">
+                  {loadingBroadcasts ? (
+                    <div className="py-8 text-center text-xs text-[#787774]">Carregando comunicados ativos...</div>
+                  ) : broadcastList.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-[#787774] space-y-2">
+                      <Megaphone className="w-8 h-8 text-[#DDDCD6] mx-auto" />
+                      <p>Nenhum comunicado manual publicado no momento.</p>
+                      <button
+                        type="button"
+                        onClick={() => setBroadcastActiveTab("CREATE")}
+                        className="text-amber-700 font-bold hover:underline"
+                      >
+                        Publicar primeiro comunicado agora
+                      </button>
+                    </div>
+                  ) : (
+                    broadcastList.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-4 rounded-2xl border border-[#E5E5E0] bg-white flex items-start justify-between gap-4 shadow-2xs hover:shadow-xs transition"
+                      >
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                              {item.priority === "HIGH" || item.priority === "URGENT" ? "🚨 Prioridade Alta" : "📢 Normal"}
+                            </span>
+                            <span className="text-[11px] text-[#A1A19B]">• {item.date}</span>
+                          </div>
+                          <h4 className="font-bold text-xs text-[#181816]">{item.title}</h4>
+                          <p className="text-xs text-[#71716C] leading-relaxed whitespace-pre-wrap">{item.message}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBroadcast(item.id)}
+                          className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer"
+                          title="Remover comunicado do sistema"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Rodapé do Modal */}
+            <div className="p-4 border-t border-[#EBEBE8] bg-[#FBFBFA] flex items-center justify-between text-xs text-[#787774]">
+              <span>TorxOS Platform Broadcast System</span>
+              <button
+                type="button"
+                onClick={() => setShowBroadcastModal(false)}
+                className="px-4 py-1.5 rounded-xl bg-[#181816] hover:bg-[#2b2a27] text-white font-semibold transition cursor-pointer"
+              >
+                Concluir
+              </button>
             </div>
           </div>
         </div>

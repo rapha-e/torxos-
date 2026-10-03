@@ -2,6 +2,8 @@
 // TorxOS — Central de Notificações & Atualizações do Sistema (Changelog & Broadcast)
 // ============================================================================
 
+import { fetchApi } from "./api";
+
 export interface SystemUpdateItem {
   id: string;
   version: string;
@@ -122,6 +124,75 @@ export function getBroadcastAnnouncements(): BroadcastAnnouncement[] {
   }
 }
 
+export async function fetchRemoteAnnouncements(): Promise<BroadcastAnnouncement[]> {
+  try {
+    const data = await fetchApi("/tenant/announcements");
+    if (Array.isArray(data)) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(BROADCAST_STORAGE_KEY, JSON.stringify(data));
+      }
+      return data;
+    }
+  } catch (err) {}
+  return getBroadcastAnnouncements();
+}
+
+export async function createBroadcastAnnouncement(announcement: {
+  title: string;
+  message: string;
+  category?: string;
+  priority?: "NORMAL" | "HIGH" | "URGENT";
+  actionUrl?: string;
+  actionLabel?: string;
+}): Promise<BroadcastAnnouncement> {
+  try {
+    const res = await fetchApi("/tenant/super-admin/announcements", {
+      method: "POST",
+      body: JSON.stringify(announcement),
+    });
+    if (res?.announcement) {
+      const current = getBroadcastAnnouncements();
+      const updated = [res.announcement, ...current.filter((b) => b.id !== res.announcement.id)];
+      if (typeof window !== "undefined") {
+        localStorage.setItem(BROADCAST_STORAGE_KEY, JSON.stringify(updated));
+      }
+      return res.announcement;
+    }
+  } catch (err) {}
+
+  // Fallback local se a API estiver offline
+  const newAnnounce: BroadcastAnnouncement = {
+    ...announcement,
+    author: "Equipe TorxOS",
+    priority: announcement.priority || "NORMAL",
+    id: `announce-${Date.now()}`,
+    date: new Date().toLocaleDateString("pt-BR"),
+  };
+  if (typeof window !== "undefined") {
+    try {
+      const current = getBroadcastAnnouncements();
+      localStorage.setItem(BROADCAST_STORAGE_KEY, JSON.stringify([newAnnounce, ...current]));
+    } catch {}
+  }
+  return newAnnounce;
+}
+
+export async function deleteBroadcastAnnouncement(id: string): Promise<boolean> {
+  try {
+    await fetchApi(`/tenant/super-admin/announcements/${id}`, {
+      method: "DELETE",
+    });
+  } catch (err) {}
+
+  if (typeof window !== "undefined") {
+    try {
+      const current = getBroadcastAnnouncements();
+      localStorage.setItem(BROADCAST_STORAGE_KEY, JSON.stringify(current.filter((b) => b.id !== id)));
+    } catch {}
+  }
+  return true;
+}
+
 export function saveBroadcastAnnouncement(announcement: Omit<BroadcastAnnouncement, "id" | "date">): BroadcastAnnouncement {
   const newAnnounce: BroadcastAnnouncement = {
     ...announcement,
@@ -143,3 +214,4 @@ export function getUnreadUpdatesCount(): number {
   const broadcastUnread = getBroadcastAnnouncements().filter((b) => !readIds.has(b.id)).length;
   return officialUnread + broadcastUnread;
 }
+

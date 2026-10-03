@@ -223,5 +223,38 @@ export class TenantController {
   ) {
     return this.tenantService.testTenantWhatsAppMessage(tenantId, body?.phone, body?.text);
   }
+
+  // =========================================================================
+  // COMUNICADOS GLOBAIS (NOTIFICAÇÕES PARA AS ASSISTÊNCIAS)
+  // =========================================================================
+
+  @Get("announcements")
+  @ApiOperation({ summary: "Lista comunicados e avisos oficiais para as assistências técnicas" })
+  async getSystemAnnouncements() {
+    return this.tenantService.getSystemAnnouncements();
+  }
+
+  @Post("super-admin/announcements")
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: "Cria e publica um novo comunicado global para todas as assistências" })
+  async createSystemAnnouncement(
+    @Body() dto: {
+      title: string;
+      message: string;
+      category?: string;
+      priority?: "HIGH" | "NORMAL";
+      actionUrl?: string;
+      actionLabel?: string;
+    },
+  ) {
+    return this.tenantService.createSystemAnnouncement(dto);
+  }
+
+  @Delete("super-admin/announcements/:id")
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: "Exclui um comunicado global do sistema" })
+  async deleteSystemAnnouncement(@Param("id") id: string) {
+    return this.tenantService.deleteSystemAnnouncement(id);
+  }
 }
 

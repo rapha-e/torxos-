@@ -21,6 +21,7 @@ import {
   getReadUpdatesIds,
   markUpdatesAsRead,
   getBroadcastAnnouncements,
+  fetchRemoteAnnouncements,
   SystemUpdateItem,
   BroadcastAnnouncement,
 } from "@/lib/notifications";
@@ -44,6 +45,11 @@ export function SystemNotificationsModal({
     if (isOpen) {
       setReadIds(getReadUpdatesIds());
       setBroadcasts(getBroadcastAnnouncements());
+      fetchRemoteAnnouncements().then((remote) => {
+        if (Array.isArray(remote) && remote.length > 0) {
+          setBroadcasts(remote);
+        }
+      });
     }
   }, [isOpen]);
 
