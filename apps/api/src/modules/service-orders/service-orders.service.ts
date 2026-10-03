@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-import { CreateServiceOrderDto, UpdateOsStatusDto, ClientApproveDto, ClientRejectDto } from "./dto/service-order.dto";
+import { CreateServiceOrderDto, UpdateOsStatusDto, ClientApproveDto, ClientRejectDto, UpdateServiceOrderDto } from "./dto/service-order.dto";
 import { OsStatus, TransactionType, TransactionStatus } from "../../common/enums";
 import { TenantService } from "../tenant/tenant.service";
 
@@ -178,6 +178,117 @@ export class ServiceOrdersService {
         items: true,
       },
     });
+  }
+
+  async update(tenantId: string, id: string, dto: UpdateServiceOrderDto) {
+    const order = await this.findById(tenantId, id);
+
+    let totalServices = Number(order.totalServices) || 0;
+    let totalParts = Number(order.totalParts) || 0;
+    let totalDiscount = dto.totalDiscount !== undefined ? Number(dto.totalDiscount) : (Number(order.totalDiscount) || 0);
+
+    // Se novos itens foram fornecidos
+    if (dto.items && Array.isArray(dto.items)) {
+      // 1. Se a OS já teve baixa de estoque (está em bancada/aprovada com baixa), estorna primeiro os itens antigos
+      if (order.stockDeducted) {
+        await this.restoreStockForOrder(tenantId, order);
+      }
+
+      // 2. Remove os itens antigos
+      await this.prisma.serviceOrderItem.deleteMany({
+        where: { serviceOrderId: id },
+      });
+
+      // 3. Monta e calcula os novos itens
+      totalServices = 0;
+      totalParts = 0;
+
+      const itemsToCreate = dto.items.map((item) => {
+        const quantity = Number(item.quantity) || 1;
+        const unitPrice = Number(item.unitPrice) || 0;
+        const unitCost = Number(item.unitCost) || 0;
+        const discount = Number(item.discountAmount) || 0;
+        const totalAmount = quantity * unitPrice - discount;
+
+        if (item.itemType === "SERVICE") {
+          totalServices += totalAmount;
+        } else {
+          totalParts += totalAmount;
+        }
+
+        return {
+          tenantId,
+          serviceOrderId: id,
+          itemType: item.itemType || "SERVICE",
+          productId: item.productId || null,
+          description: item.description || "Item de OS",
+          quantity,
+          unitCost,
+          unitPrice,
+          discountAmount: discount,
+          totalAmount,
+          technicianId: item.technicianId || order.technicianId || null,
+          stockDeducted: false,
+        };
+      });
+
+      if (itemsToCreate.length > 0) {
+        await this.prisma.serviceOrderItem.createMany({
+          data: itemsToCreate,
+        });
+      }
+
+      // 4. Se a OS estava num status de bancada (onde o estoque deve permanecer baixado),
+      // valida a disponibilidade e faz a baixa das novas peças
+      const isWorkbenchOrAfter = ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(order.status);
+      if (isWorkbenchOrAfter) {
+        const reloadedOrder = await this.findById(tenantId, id);
+        await this.validateStockAvailability(tenantId, reloadedOrder);
+        await this.deductStockForOrder(tenantId, reloadedOrder);
+      }
+    }
+
+    const netTotal = Math.max(0, totalServices + totalParts - totalDiscount);
+
+    // Atualiza a OS
+    const updatedOrder = await this.prisma.serviceOrder.update({
+      where: { id },
+      data: {
+        technicianId: dto.technicianId !== undefined ? dto.technicianId : order.technicianId,
+        priority: dto.priority || order.priority,
+        deviceType: dto.deviceType || order.deviceType,
+        deviceBrand: dto.deviceBrand || order.deviceBrand,
+        deviceModel: dto.deviceModel || order.deviceModel,
+        serialOrImei: dto.serialOrImei !== undefined ? dto.serialOrImei : order.serialOrImei,
+        devicePassword: dto.devicePassword !== undefined ? dto.devicePassword : order.devicePassword,
+        reportedDefect: dto.reportedDefect || order.reportedDefect,
+        technicalDiagnosis: dto.technicalDiagnosis !== undefined ? dto.technicalDiagnosis : order.technicalDiagnosis,
+        totalServices,
+        totalParts,
+        totalDiscount,
+        netTotal,
+      },
+      include: {
+        tenant: true,
+        client: true,
+        technician: true,
+        items: true,
+      },
+    });
+
+    // Se já havia transação financeira criada (ex: se entregue), ajusta os valores
+    if (order.financialTransactions && order.financialTransactions.length > 0) {
+      await this.prisma.financialTransaction.updateMany({
+        where: { serviceOrderId: id, tenantId },
+        data: {
+          grossAmount: netTotal,
+          netAmount: netTotal,
+        },
+      });
+    }
+
+    this.logger.log(`OS #${order.osNumber} (${id}) editada com sucesso na bancada. Novo NetTotal: ${netTotal}`);
+    return updatedOrder;
   }
 
   async updateStatus(tenantId: string, id: string, dto: UpdateOsStatusDto) {

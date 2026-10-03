@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 import { ServiceOrdersService } from "./service-orders.service";
-import { CreateServiceOrderDto, UpdateOsStatusDto } from "./dto/service-order.dto";
+import { CreateServiceOrderDto, UpdateOsStatusDto, UpdateServiceOrderDto } from "./dto/service-order.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentTenant } from "../../common/decorators/user.decorator";
 import { OsStatus } from "../../common/enums";
@@ -47,6 +47,16 @@ export class ServiceOrdersController {
     return this.serviceOrdersService.create(tenantId, dto);
   }
 
+  @Patch(":id")
+  @ApiOperation({ summary: "Edição de dados, itens e valores da OS na bancada" })
+  async update(
+    @CurrentTenant() tenantId: string,
+    @Param("id") id: string,
+    @Body() dto: UpdateServiceOrderDto,
+  ) {
+    return this.serviceOrdersService.update(tenantId, id, dto);
+  }
+
   @Patch(":id/status")
   @ApiOperation({ summary: "Transição de status da OS (dispara triggers de baixa de estoque e financeiro)" })
   async updateStatus(
@@ -57,3 +67,4 @@ export class ServiceOrdersController {
     return this.serviceOrdersService.updateStatus(tenantId, id, dto);
   }
 }
+

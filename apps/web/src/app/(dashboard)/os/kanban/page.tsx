@@ -28,11 +28,13 @@ import {
   MessageSquare,
   AlertTriangle,
   Ban,
+  Pencil,
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { formatCurrency, formatDate, translatePriority } from "@/lib/utils";
 import { WhatsAppNotificationModal } from "@/components/ui/whatsapp-modal";
 import { CancelOsModal } from "@/components/ui/cancel-os-modal";
+import { EditOsModal } from "@/components/ui/edit-os-modal";
 
 const KANBAN_COLUMNS = [
   { id: "TRIAGE", label: "Triagem", dot: "bg-[#71716C]", badge: "bg-[#F3F3EF] text-[#71716C] border-[rgba(28,25,23,0.08)]", group: "INTAKE" },
@@ -67,6 +69,7 @@ export default function KanbanPage() {
   const [whatsAppOs, setWhatsAppOs] = useState<any | null>(null);
   const [whatsAppTemplate, setWhatsAppTemplate] = useState<"QUOTE" | "READY" | "ENTRY">("QUOTE");
   const [cancelOs, setCancelOs] = useState<any | null>(null);
+  const [editingOs, setEditingOs] = useState<any | null>(null);
   const [stockErrorModal, setStockErrorModal] = useState<{
     isOpen: boolean;
     osNumber: number | string;
@@ -726,11 +729,33 @@ export default function KanbanPage() {
 
                       {/* Footer com Valor e Ações */}
                       <div className="pt-2 border-t border-[rgba(28,25,23,0.06)] flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#1C1C1A] tabular-nums">
-                          {formatCurrency(order.netTotal)}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingOs(order);
+                          }}
+                          title="Clique para ajustar o valor e itens da OS na bancada"
+                          className="text-xs font-bold text-[#1C1C1A] tabular-nums hover:text-amber-800 hover:bg-amber-50 px-1.5 py-0.5 rounded transition flex items-center gap-1 group cursor-pointer border border-transparent hover:border-amber-200"
+                        >
+                          <span>{formatCurrency(order.netTotal)}</span>
+                          <Pencil className="w-2.5 h-2.5 text-stone-400 group-hover:text-amber-700 transition" />
+                        </button>
 
                         <div className="flex items-center gap-1">
+                          {/* Botão de Edição da OS na Bancada */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingOs(order);
+                            }}
+                            title="Editar dados, itens e valores da OS na bancada"
+                            className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 transition border border-amber-200 cursor-pointer"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-amber-700" strokeWidth={1.75} />
+                          </button>
+
                           {order.publicToken && (
                             <button
                               onClick={(e) => {
@@ -896,6 +921,21 @@ export default function KanbanPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Edição de OS e Ajuste de Valores na Bancada */}
+      {editingOs && (
+        <EditOsModal
+          isOpen={!!editingOs}
+          onClose={() => setEditingOs(null)}
+          onSaved={async (updatedOs) => {
+            await loadKanban();
+            showToast(`OS #${updatedOs.osNumber || editingOs.osNumber} atualizada com sucesso!`);
+            setEditingOs(null);
+          }}
+          osData={editingOs}
+        />
+      )}
     </div>
   );
 }
+

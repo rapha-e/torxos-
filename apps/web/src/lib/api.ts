@@ -140,6 +140,16 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
           const current = getLocalServiceOrders();
           const filtered = current.filter((o: any) => o.id !== data.id && o.osNumber !== data.osNumber);
           localStorage.setItem("evorix_service_orders", JSON.stringify([data, ...filtered]));
+        } else if (options.method === "PATCH" && !endpoint.includes("/status") && data && (data.id || data.osNumber)) {
+          localStorage.removeItem("evorix_kanban_state");
+          localStorage.removeItem("torxos_kanban_state");
+          const current = getLocalServiceOrders();
+          const updated = current.map((o: any) =>
+            o.id === data.id || o.publicToken === data.publicToken || String(o.osNumber) === String(data.osNumber)
+              ? { ...o, ...data }
+              : o
+          );
+          localStorage.setItem("evorix_service_orders", JSON.stringify(updated));
         } else if (options.method === "PATCH" && endpoint.includes("/status")) {
           const parts = endpoint.split("/");
           const statusIdx = parts.indexOf("status");
@@ -162,6 +172,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
         }
       }
     }
+
 
     return data;
   } catch (error: any) {
@@ -1198,20 +1209,95 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
     return found;
   }
 
-  // Consulta detalhada de uma OS (/service-orders/:id ou publicToken)
+  // Consulta e edição detalhada de uma OS (/service-orders/:id ou publicToken)
   const osIdMatch = endpoint.match(/\/service-orders\/([^?]+)/);
 
-  if (osIdMatch && !endpoint.includes("/kanban")) {
+  if (osIdMatch && !endpoint.includes("/kanban") && !endpoint.includes("/status")) {
     const requestedId = osIdMatch[1];
     const allOrders = getLocalServiceOrders();
-    const found = allOrders.find(
+    const foundIndex = allOrders.findIndex(
       (o: any) =>
         o.id === requestedId ||
         o.publicToken === requestedId ||
         o.osNumber?.toString() === requestedId ||
         requestedId.endsWith(o.id)
     );
-    if (found) return found;
+
+    if (options.method === "PATCH" || options.method === "PUT") {
+      try {
+        const payload = options.body ? JSON.parse(options.body as string) : {};
+        const targetOrder = foundIndex >= 0 ? allOrders[foundIndex] : allOrders[0] || {};
+
+        let totalServices = Number(targetOrder.totalServices) || 0;
+        let totalParts = Number(targetOrder.totalParts) || 0;
+        let totalDiscount =
+          payload.totalDiscount !== undefined
+            ? Number(payload.totalDiscount)
+            : Number(targetOrder.totalDiscount) || 0;
+
+        let newItems = targetOrder.items || [];
+        if (payload.items && Array.isArray(payload.items)) {
+          totalServices = 0;
+          totalParts = 0;
+          newItems = payload.items.map((it: any, idx: number) => {
+            const quantity = Number(it.quantity) || 1;
+            const unitPrice = Number(it.unitPrice) || 0;
+            const unitCost = Number(it.unitCost) || 0;
+            const discount = Number(it.discountAmount) || 0;
+            const totalAmount = quantity * unitPrice - discount;
+
+            if (it.itemType === "SERVICE") {
+              totalServices += totalAmount;
+            } else {
+              totalParts += totalAmount;
+            }
+
+            return {
+              id: it.id || `item-patch-${idx}-${Date.now()}`,
+              itemType: it.itemType || "SERVICE",
+              productId: it.productId || null,
+              description: it.description || "Item de OS",
+              quantity,
+              unitCost,
+              unitPrice,
+              discountAmount: discount,
+              totalAmount,
+            };
+          });
+        }
+
+        const netTotal = Math.max(0, totalServices + totalParts - totalDiscount);
+
+        const updatedOrder = {
+          ...targetOrder,
+          ...payload,
+          items: newItems,
+          totalServices,
+          totalParts,
+          totalDiscount,
+          netTotal,
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (foundIndex >= 0) {
+          allOrders[foundIndex] = updatedOrder;
+        } else {
+          allOrders.unshift(updatedOrder);
+        }
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem("evorix_service_orders", JSON.stringify(allOrders));
+          localStorage.removeItem("evorix_kanban_state");
+          localStorage.removeItem("torxos_kanban_state");
+        }
+
+        return updatedOrder;
+      } catch (e) {
+        console.error("Erro no fallback do PATCH service-order:", e);
+      }
+    }
+
+    if (foundIndex >= 0) return allOrders[foundIndex];
     return allOrders[0] || {};
   }
 

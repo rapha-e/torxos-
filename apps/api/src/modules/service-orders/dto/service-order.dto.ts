@@ -149,3 +149,104 @@ export class ClientRejectDto {
   reason?: string;
 }
 
+export class UpdateServiceOrderItemDto {
+  @ApiPropertyOptional({ example: "SERVICE", enum: ["SERVICE", "PRODUCT"] })
+  @IsOptional()
+  @IsString()
+  itemType?: "SERVICE" | "PRODUCT";
+
+  @ApiPropertyOptional({ description: "ID do Produto no estoque (caso seja PRODUCT)" })
+  @IsOptional()
+  @IsUUID()
+  productId?: string;
+
+  @ApiPropertyOptional({ example: "Troca de Tela Frontal iPhone 13 Pro" })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @IsNumber()
+  quantity?: number;
+
+  @ApiPropertyOptional({ example: 350.0 })
+  @IsOptional()
+  @IsNumber()
+  unitCost?: number;
+
+  @ApiPropertyOptional({ example: 890.0 })
+  @IsOptional()
+  @IsNumber()
+  unitPrice?: number;
+
+  @ApiPropertyOptional({ example: 0.0 })
+  @IsOptional()
+  @IsNumber()
+  discountAmount?: number;
+
+  @ApiPropertyOptional({ description: "ID do Técnico executor para comissão" })
+  @IsOptional()
+  @IsUUID()
+  technicianId?: string;
+}
+
+export class UpdateServiceOrderDto {
+  @ApiPropertyOptional({ description: "ID do Técnico responsável" })
+  @IsOptional()
+  @IsUUID()
+  technicianId?: string;
+
+  @ApiPropertyOptional({ example: "NORMAL", enum: ["LOW", "NORMAL", "URGENT"] })
+  @IsOptional()
+  @IsString()
+  priority?: "LOW" | "NORMAL" | "URGENT";
+
+  @ApiPropertyOptional({ example: "Smartphone" })
+  @IsOptional()
+  @IsString()
+  deviceType?: string;
+
+  @ApiPropertyOptional({ example: "Apple" })
+  @IsOptional()
+  @IsString()
+  deviceBrand?: string;
+
+  @ApiPropertyOptional({ example: "iPhone 13 Pro Max" })
+  @IsOptional()
+  @IsString()
+  deviceModel?: string;
+
+  @ApiPropertyOptional({ example: "358921092837123" })
+  @IsOptional()
+  @IsString()
+  serialOrImei?: string;
+
+  @ApiPropertyOptional({ example: "123456" })
+  @IsOptional()
+  @IsString()
+  devicePassword?: string;
+
+  @ApiPropertyOptional({ example: "Aparelho não liga após queda em água doce" })
+  @IsOptional()
+  @IsString()
+  reportedDefect?: string;
+
+  @ApiPropertyOptional({ example: "Placa em curto na linha VDD_MAIN. Conector substituído." })
+  @IsOptional()
+  @IsString()
+  technicalDiagnosis?: string;
+
+  @ApiPropertyOptional({ example: 0.0 })
+  @IsOptional()
+  @IsNumber()
+  totalDiscount?: number;
+
+  @ApiPropertyOptional({ type: [UpdateServiceOrderItemDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateServiceOrderItemDto)
+  items?: UpdateServiceOrderItemDto[];
+}
+

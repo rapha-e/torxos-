@@ -13,12 +13,14 @@ import {
   Filter,
   RefreshCw,
   Ban,
+  Pencil,
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { formatCurrency, translateOsStatus } from "@/lib/utils";
 import { WhatsAppNotificationModal } from "@/components/ui/whatsapp-modal";
 import { PrintHeader } from "@/components/ui/print-header";
 import { CancelOsModal } from "@/components/ui/cancel-os-modal";
+import { EditOsModal } from "@/components/ui/edit-os-modal";
 
 export default function ServiceOrdersListPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -26,6 +28,7 @@ export default function ServiceOrdersListPage() {
   const [loading, setLoading] = useState(true);
   const [whatsAppOs, setWhatsAppOs] = useState<any | null>(null);
   const [cancelOs, setCancelOs] = useState<any | null>(null);
+  const [editingOs, setEditingOs] = useState<any | null>(null);
 
   // Filtros de Status
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -337,10 +340,35 @@ export default function ServiceOrdersListPage() {
                       {order.reportedDefect}
                     </td>
                     <td className={`py-3.5 px-4 text-right font-bold tabular-nums ${isCanceled ? "line-through text-[#71716C]" : "text-[#1C1C1A]"}`}>
-                      {formatCurrency(order.netTotal)}
+                      {!isCanceled && !isDelivered ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingOs(order)}
+                          className="inline-flex items-center justify-end gap-1 hover:text-amber-800 hover:bg-amber-50 px-1.5 py-0.5 rounded transition cursor-pointer group"
+                          title="Clique para ajustar o valor da OS"
+                        >
+                          <span>{formatCurrency(order.netTotal)}</span>
+                          <Pencil className="w-2.5 h-2.5 text-stone-300 group-hover:text-amber-700" />
+                        </button>
+                      ) : (
+                        formatCurrency(order.netTotal)
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-center no-print print:hidden">
                       <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                        {/* Botão Editar OS */}
+                        {!isCanceled && !isDelivered && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingOs(order)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg border border-amber-200 transition-colors cursor-pointer"
+                            title="Editar dados, itens e valores da OS"
+                          >
+                            <Pencil className="w-3 h-3 text-amber-700" />
+                            <span>Editar</span>
+                          </button>
+                        )}
+
                         {/* Botão WhatsApp */}
                         <button
                           type="button"
@@ -434,6 +462,20 @@ export default function ServiceOrdersListPage() {
           }}
         />
       )}
+
+      {/* Modal de Edição de OS e Ajuste de Valores */}
+      {editingOs && (
+        <EditOsModal
+          isOpen={!!editingOs}
+          onClose={() => setEditingOs(null)}
+          onSaved={async () => {
+            await loadOrders();
+            setEditingOs(null);
+          }}
+          osData={editingOs}
+        />
+      )}
     </div>
   );
 }
+
