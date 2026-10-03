@@ -178,8 +178,24 @@ export default function PublicOrderStatusPage() {
             </div>
           </div>
 
+          {/* Banner de Alerta para o Cliente caso seja Orçamento / Revisão */}
+          {order.status === "AWAITING_APPROVAL" && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-900 text-xs flex items-start gap-2.5 shadow-2xs">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-950">
+                  Orçamento Técnico Disponível para Aprovação
+                </p>
+                <p className="text-[11px] text-amber-800 mt-0.5 leading-snug">
+                  Nossa equipe técnica concluiu a análise do seu aparelho na bancada. Por favor, confira os itens detalhados abaixo e confirme sua aprovação com assinatura digital para iniciarmos o reparo.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Dados do Aparelho */}
           <div className="p-4 rounded-xl bg-[#F3F3EF] border border-[rgba(28,25,23,0.06)] space-y-2">
+
             <div className="flex items-center gap-2 text-[#1C1C1A] font-bold text-xs">
               <Smartphone className="w-3.5 h-3.5 text-[#71716C]" strokeWidth={1.75} />
               <span>{order.deviceBrand} {order.deviceModel}</span>

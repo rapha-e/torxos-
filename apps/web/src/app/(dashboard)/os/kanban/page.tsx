@@ -67,7 +67,7 @@ export default function KanbanPage() {
   const [viewFilter, setViewFilter] = useState<ViewFilterType>("ALL");
   const [searchFilter, setSearchFilter] = useState("");
   const [whatsAppOs, setWhatsAppOs] = useState<any | null>(null);
-  const [whatsAppTemplate, setWhatsAppTemplate] = useState<"QUOTE" | "READY" | "ENTRY">("QUOTE");
+  const [whatsAppTemplate, setWhatsAppTemplate] = useState<"QUOTE" | "UPDATE" | "READY" | "ENTRY">("QUOTE");
   const [cancelOs, setCancelOs] = useState<any | null>(null);
   const [editingOs, setEditingOs] = useState<any | null>(null);
   const [stockErrorModal, setStockErrorModal] = useState<{
@@ -930,7 +930,12 @@ export default function KanbanPage() {
           onSaved={async (updatedOs) => {
             await loadKanban();
             if (updatedOs.status === "AWAITING_APPROVAL" && editingOs.status !== "AWAITING_APPROVAL") {
-              showToast(`OS #${updatedOs.osNumber || editingOs.osNumber} movida para Aguardando Aprovação (peças estornadas ao estoque)!`);
+              showToast(`OS #${updatedOs.osNumber || editingOs.osNumber} retornou para aprovação! Disparando alerta WhatsApp...`);
+              setWhatsAppTemplate("UPDATE");
+              setWhatsAppOs({
+                ...editingOs,
+                ...updatedOs,
+              });
             } else {
               showToast(`OS #${updatedOs.osNumber || editingOs.osNumber} atualizada com sucesso!`);
             }
@@ -938,6 +943,7 @@ export default function KanbanPage() {
           }}
           osData={editingOs}
         />
+
 
       )}
     </div>

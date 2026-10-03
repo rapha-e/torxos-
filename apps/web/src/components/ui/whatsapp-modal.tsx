@@ -13,7 +13,7 @@ interface WhatsAppModalProps {
   publicToken: string;
   osNumber: number | string;
   netTotal: number;
-  initialTemplate?: "QUOTE" | "READY" | "ENTRY";
+  initialTemplate?: "QUOTE" | "UPDATE" | "READY" | "ENTRY";
 }
 
 export function WhatsAppNotificationModal({
@@ -27,7 +27,7 @@ export function WhatsAppNotificationModal({
   netTotal,
   initialTemplate = "QUOTE",
 }: WhatsAppModalProps) {
-  const [template, setTemplate] = useState<"QUOTE" | "READY" | "ENTRY">(initialTemplate);
+  const [template, setTemplate] = useState<"QUOTE" | "UPDATE" | "READY" | "ENTRY">(initialTemplate);
   const [copied, setCopied] = useState(false);
   const [isSendingApi, setIsSendingApi] = useState(false);
   const [apiSuccess, setApiSuccess] = useState(false);
@@ -52,11 +52,13 @@ export function WhatsAppNotificationModal({
   // Mensagens padrão para cada etapa com o Nome da Loja evidente
   const defaultMessages = {
     QUOTE: `Olá, ${clientName}! Aqui é da equipe técnica da *${storeName}*. 👋\n\nConcluímos o diagnóstico do seu *${deviceModel}* (OS #${osNumber}).\n\nO laudo técnico detalhado e os valores das peças já estão disponíveis para você revisar e aprovar em 1 clique pelo link seguro:\n👉 ${publicUrl}\n\nValor total: *R$ ${(Number(netTotal) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}* com garantia legal assegurada.\n\nQualquer dúvida, estamos à total disposição por aqui!`,
+    UPDATE: `Olá, ${clientName}! Aqui é da equipe técnica da *${storeName}*. ⚠️\n\nIdentificamos uma *atualização técnica importante* no orçamento do seu *${deviceModel}* (OS #${osNumber}).\n\nPara garantir a durabilidade e qualidade total do reparo, o laudo e os itens foram revisados na bancada.\n\nNovo valor total: *R$ ${(Number(netTotal) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*.\n\nPor gentileza, confira os novos itens e confirme sua aprovação pelo link seguro:\n👉 ${publicUrl}\n\nFicamos no aguardo da sua autorização para prosseguir com o conserto!`,
     READY: `Olá, ${clientName}! Boas notícias da *${storeName}*! 🎉\n\nO serviço no seu *${deviceModel}* (OS #${osNumber}) foi concluído com sucesso e passou por todos os testes de qualidade.\n\nO aparelho já está pronto para retirada em nosso balcão.\n\nVocê pode consultar o laudo final e recibo em:\n👉 ${publicUrl}\n\nAguardamos sua visita!`,
     ENTRY: `Olá, ${clientName}! Aqui é da *${storeName}*. 👋\n\nSeu *${deviceModel}* acabou de dar entrada em nosso laboratório técnico sob a OS #${osNumber}.\n\nVocê pode acompanhar em tempo real cada etapa do reparo por este link exclusivo:\n👉 ${publicUrl}\n\nAssim que o laudo e orçamento forem concluídos, enviaremos os detalhes para você. Obrigado pela confiança!`,
   };
 
   const [customMessage, setCustomMessage] = useState<string>(defaultMessages[initialTemplate] || defaultMessages.QUOTE);
+
 
   React.useEffect(() => {
     if (isOpen) {
@@ -68,7 +70,7 @@ export function WhatsAppNotificationModal({
 
   if (!isOpen) return null;
 
-  const handleTemplateChange = (newTemplate: "QUOTE" | "READY" | "ENTRY") => {
+  const handleTemplateChange = (newTemplate: "QUOTE" | "UPDATE" | "READY" | "ENTRY") => {
     setTemplate(newTemplate);
     setCustomMessage(defaultMessages[newTemplate]);
   };
@@ -136,7 +138,7 @@ export function WhatsAppNotificationModal({
         {/* Seleção de Template */}
         <div>
           <label className="block text-xs font-semibold text-[#181816] mb-2">Selecione o Modelo de Mensagem</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               type="button"
               onClick={() => handleTemplateChange("QUOTE")}
@@ -147,6 +149,17 @@ export function WhatsAppNotificationModal({
               }`}
             >
               Orçamento
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTemplateChange("UPDATE")}
+              className={`p-2.5 rounded-xl text-xs font-medium border text-center transition-all ${
+                template === "UPDATE"
+                  ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                  : "bg-amber-50/70 text-amber-900 border-amber-200 hover:bg-amber-100"
+              }`}
+            >
+              Revisão OS
             </button>
             <button
               type="button"
@@ -172,6 +185,7 @@ export function WhatsAppNotificationModal({
             </button>
           </div>
         </div>
+
 
         {/* Caixa de Texto Editável */}
         <div>

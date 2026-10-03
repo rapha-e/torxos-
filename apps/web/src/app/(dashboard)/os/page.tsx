@@ -27,6 +27,7 @@ export default function ServiceOrdersListPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [whatsAppOs, setWhatsAppOs] = useState<any | null>(null);
+  const [whatsAppTemplate, setWhatsAppTemplate] = useState<"QUOTE" | "UPDATE" | "READY" | "ENTRY">("QUOTE");
   const [cancelOs, setCancelOs] = useState<any | null>(null);
   const [editingOs, setEditingOs] = useState<any | null>(null);
 
@@ -435,13 +436,7 @@ export default function ServiceOrdersListPage() {
           publicToken={whatsAppOs.publicToken}
           osNumber={whatsAppOs.osNumber}
           netTotal={Number(whatsAppOs.netTotal) || 0}
-          initialTemplate={
-            whatsAppOs.status === "AWAITING_APPROVAL"
-              ? "QUOTE"
-              : whatsAppOs.status === "READY_FOR_PICKUP" || whatsAppOs.status === "DELIVERED"
-              ? "READY"
-              : "ENTRY"
-          }
+          initialTemplate={whatsAppTemplate}
         />
       )}
 
@@ -468,13 +463,21 @@ export default function ServiceOrdersListPage() {
         <EditOsModal
           isOpen={!!editingOs}
           onClose={() => setEditingOs(null)}
-          onSaved={async () => {
+          onSaved={async (updatedOs) => {
             await loadOrders();
+            if (updatedOs.status === "AWAITING_APPROVAL" && editingOs.status !== "AWAITING_APPROVAL") {
+              setWhatsAppTemplate("UPDATE");
+              setWhatsAppOs({
+                ...editingOs,
+                ...updatedOs,
+              });
+            }
             setEditingOs(null);
           }}
           osData={editingOs}
         />
       )}
+
     </div>
   );
 }
