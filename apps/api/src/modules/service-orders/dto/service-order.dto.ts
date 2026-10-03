@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsUUID, IsArray, ValidateNested, IsNumber } from "class-validator";
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsUUID, IsArray, ValidateNested, IsNumber, IsBoolean } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { OsStatus } from "../../../common/enums";
@@ -242,6 +242,14 @@ export class UpdateServiceOrderDto {
   @IsNumber()
   totalDiscount?: number;
 
+  @ApiPropertyOptional({
+    description: "Se true, move a OS de volta para AWAITING_APPROVAL e estorna peças no estoque até aprovação do cliente",
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  requireClientApproval?: boolean;
+
   @ApiPropertyOptional({ type: [UpdateServiceOrderItemDto] })
   @IsOptional()
   @IsArray()
@@ -249,4 +257,5 @@ export class UpdateServiceOrderDto {
   @Type(() => UpdateServiceOrderItemDto)
   items?: UpdateServiceOrderItemDto[];
 }
+
 

@@ -187,10 +187,21 @@ export class ServiceOrdersService {
     let totalParts = Number(order.totalParts) || 0;
     let totalDiscount = dto.totalDiscount !== undefined ? Number(dto.totalDiscount) : (Number(order.totalDiscount) || 0);
 
+    const isWorkbenchOrAfter = ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(order.status);
+    const shouldReturnToApproval = dto.requireClientApproval === true;
+    const targetStatus = shouldReturnToApproval ? "AWAITING_APPROVAL" : order.status;
+
+    // Se a OS deve retornar para aguardando aprovação e já tinha tido baixa de peças:
+    // Estorna imediatamente o estoque das peças para que o saldo volte a ficar disponível
+    if (shouldReturnToApproval && order.stockDeducted) {
+      await this.restoreStockForOrder(tenantId, order);
+      this.logger.log(`[ESTORNO DE BANCADA] OS #${order.osNumber} retornou para AWAITING_APPROVAL. Peças devolvidas ao estoque.`);
+    }
+
     // Se novos itens foram fornecidos
     if (dto.items && Array.isArray(dto.items)) {
-      // 1. Se a OS já teve baixa de estoque (está em bancada/aprovada com baixa), estorna primeiro os itens antigos
-      if (order.stockDeducted) {
+      // 1. Se a OS ainda mantinha baixa de estoque e não foi estornada acima, estorna os itens anteriores
+      if (order.stockDeducted && !shouldReturnToApproval) {
         await this.restoreStockForOrder(tenantId, order);
       }
 
@@ -238,10 +249,9 @@ export class ServiceOrdersService {
         });
       }
 
-      // 4. Se a OS estava num status de bancada (onde o estoque deve permanecer baixado),
-      // valida a disponibilidade e faz a baixa das novas peças
-      const isWorkbenchOrAfter = ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(order.status);
-      if (isWorkbenchOrAfter) {
+      // 4. Se a OS permanece em bancada (NÃO voltou para aprovação),
+      // valida a disponibilidade das novas peças e efetua a baixa
+      if (isWorkbenchOrAfter && !shouldReturnToApproval) {
         const reloadedOrder = await this.findById(tenantId, id);
         await this.validateStockAvailability(tenantId, reloadedOrder);
         await this.deductStockForOrder(tenantId, reloadedOrder);
@@ -250,10 +260,13 @@ export class ServiceOrdersService {
 
     const netTotal = Math.max(0, totalServices + totalParts - totalDiscount);
 
-    // Atualiza a OS
+    // Atualiza a OS com os dados e o novo status se aplicável
     const updatedOrder = await this.prisma.serviceOrder.update({
       where: { id },
       data: {
+        status: targetStatus,
+        stockDeducted: shouldReturnToApproval ? false : (isWorkbenchOrAfter ? true : order.stockDeducted),
+        stockDeductedAt: shouldReturnToApproval ? null : order.stockDeductedAt,
         technicianId: dto.technicianId !== undefined ? dto.technicianId : order.technicianId,
         priority: dto.priority || order.priority,
         deviceType: dto.deviceType || order.deviceType,
@@ -278,6 +291,7 @@ export class ServiceOrdersService {
 
     // Se já havia transação financeira criada (ex: se entregue), ajusta os valores
     if (order.financialTransactions && order.financialTransactions.length > 0) {
+
       await this.prisma.financialTransaction.updateMany({
         where: { serviceOrderId: id, tenantId },
         data: {

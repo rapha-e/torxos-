@@ -929,11 +929,16 @@ export default function KanbanPage() {
           onClose={() => setEditingOs(null)}
           onSaved={async (updatedOs) => {
             await loadKanban();
-            showToast(`OS #${updatedOs.osNumber || editingOs.osNumber} atualizada com sucesso!`);
+            if (updatedOs.status === "AWAITING_APPROVAL" && editingOs.status !== "AWAITING_APPROVAL") {
+              showToast(`OS #${updatedOs.osNumber || editingOs.osNumber} movida para Aguardando Aprovação (peças estornadas ao estoque)!`);
+            } else {
+              showToast(`OS #${updatedOs.osNumber || editingOs.osNumber} atualizada com sucesso!`);
+            }
             setEditingOs(null);
           }}
           osData={editingOs}
         />
+
       )}
     </div>
   );

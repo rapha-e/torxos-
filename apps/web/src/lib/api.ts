@@ -1266,11 +1266,32 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
           });
         }
 
+        const shouldReturnToApproval = payload.requireClientApproval === true;
+        if (shouldReturnToApproval && targetOrder.stockDeducted && Array.isArray(targetOrder.items)) {
+          // Devolve as peças antigas para o estoque local
+          const currentStockList = getLocalStockList();
+          targetOrder.items.forEach((it: any) => {
+            if (it.itemType === "PRODUCT") {
+              const p = currentStockList.find(
+                (prod: any) => prod.id === it.productId || (prod.name && it.description && prod.name.trim().toLowerCase() === it.description.trim().toLowerCase())
+              );
+              if (p) {
+                p.currentStock = (Number(p.currentStock) || 0) + (Number(it.quantity) || 1);
+              }
+            }
+          });
+          if (typeof window !== "undefined") {
+            localStorage.setItem("evorix_stock_products", JSON.stringify(currentStockList));
+          }
+        }
+
         const netTotal = Math.max(0, totalServices + totalParts - totalDiscount);
 
         const updatedOrder = {
           ...targetOrder,
           ...payload,
+          status: shouldReturnToApproval ? "AWAITING_APPROVAL" : targetOrder.status,
+          stockDeducted: shouldReturnToApproval ? false : targetOrder.stockDeducted,
           items: newItems,
           totalServices,
           totalParts,
@@ -1284,6 +1305,7 @@ function getFallbackData(endpoint: string, options: RequestInit = {}) {
         } else {
           allOrders.unshift(updatedOrder);
         }
+
 
         if (typeof window !== "undefined") {
           localStorage.setItem("evorix_service_orders", JSON.stringify(allOrders));

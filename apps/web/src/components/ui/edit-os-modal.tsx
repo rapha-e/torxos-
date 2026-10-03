@@ -14,6 +14,9 @@ import {
   CheckCircle2,
   Sparkles,
   Layers,
+  Clock,
+  RotateCcw,
+  ShieldCheck,
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { formatCurrency, translateOsStatus } from "@/lib/utils";
@@ -65,10 +68,20 @@ export function EditOsModal({ isOpen, onClose, onSaved, osData }: EditOsModalPro
   const [reportedDefect, setReportedDefect] = useState("");
   const [technicalDiagnosis, setTechnicalDiagnosis] = useState("");
   const [totalDiscount, setTotalDiscount] = useState<number>(0);
+  const [requireApproval, setRequireApproval] = useState<boolean>(true);
   const [items, setItems] = useState<EditOsItem[]>([]);
   const [stockProducts, setStockProducts] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isWorkbench = Boolean(
+    osData &&
+      ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(
+        osData.status || ""
+      )
+  );
+
+
 
   // Inicializa dados quando a OS selecionada mudar
   useEffect(() => {
@@ -233,6 +246,10 @@ export function EditOsModal({ isOpen, onClose, onSaved, osData }: EditOsModalPro
     setError(null);
 
     try {
+      const isWorkbench = ["APPROVED", "IN_MAINTENANCE", "QUALITY_CHECK", "READY_FOR_PICKUP", "DELIVERED"].includes(
+        osData.status || ""
+      );
+
       const payload = {
         deviceBrand,
         deviceModel,
@@ -240,6 +257,7 @@ export function EditOsModal({ isOpen, onClose, onSaved, osData }: EditOsModalPro
         reportedDefect,
         technicalDiagnosis,
         totalDiscount: Number(totalDiscount) || 0,
+        requireClientApproval: isWorkbench ? requireApproval : false,
         items: items.map((it) => ({
           itemType: it.itemType,
           productId: it.productId || null,
@@ -256,7 +274,17 @@ export function EditOsModal({ isOpen, onClose, onSaved, osData }: EditOsModalPro
         body: JSON.stringify(payload),
       });
 
-      onSaved(result || { ...osData, ...payload, totalServices, totalParts, netTotal: calculatedNetTotal });
+      const updatedStatus = payload.requireClientApproval ? "AWAITING_APPROVAL" : (result?.status || osData.status);
+
+      onSaved(result || {
+        ...osData,
+        ...payload,
+        status: updatedStatus,
+        stockDeducted: payload.requireClientApproval ? false : osData.stockDeducted,
+        totalServices,
+        totalParts,
+        netTotal: calculatedNetTotal,
+      });
       onClose();
     } catch (err: any) {
       console.error("Erro ao salvar edição da OS:", err);
@@ -561,8 +589,86 @@ export function EditOsModal({ isOpen, onClose, onSaved, osData }: EditOsModalPro
             </div>
           </div>
 
+          {/* SEÇÃO: Fluxo de Aprovação do Cliente & Gestão de Estoque */}
+          {isWorkbench && (
+            <div className="p-4 rounded-xl border border-[rgba(28,25,23,0.08)] bg-[#FAFAF8] space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#1C1C1A]" />
+                  <h4 className="text-xs font-bold text-[#1C1C1A] uppercase tracking-wider">
+                    Fluxo de Aprovação & Gestão de Estoque
+                  </h4>
+                </div>
+                <span className="text-[10px] text-[#71716C] bg-white px-2 py-0.5 rounded-full border border-[rgba(28,25,23,0.06)] font-semibold">
+                  Aparelho em Bancada
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Opção 1: Solicitar Nova Aprovação (Estorna estoque) */}
+                <button
+                  type="button"
+                  onClick={() => setRequireApproval(true)}
+                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between gap-2 cursor-pointer ${
+                    requireApproval
+                      ? "bg-amber-50/80 border-amber-300 ring-1 ring-amber-400 shadow-xs"
+                      : "bg-white border-[rgba(28,25,23,0.08)] hover:bg-[#F3F3EF]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-700" />
+                      <span className="text-xs font-bold text-[#1C1C1A]">
+                        Solicitar Nova Aprovação
+                      </span>
+                    </div>
+                    {requireApproval && (
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#71716C] leading-snug">
+                    Move a OS para <strong>Aguardando Aprovação</strong>. <strong>Estorna as peças</strong> para o estoque até o cliente aprovar o novo orçamento.
+                  </p>
+                  <span className="text-[9px] font-bold uppercase text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded w-fit">
+                    Recomendado se o valor aumentou
+                  </span>
+                </button>
+
+                {/* Opção 2: Manter em Bancada (Atualiza baixa física) */}
+                <button
+                  type="button"
+                  onClick={() => setRequireApproval(false)}
+                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between gap-2 cursor-pointer ${
+                    !requireApproval
+                      ? "bg-indigo-50/80 border-indigo-300 ring-1 ring-indigo-400 shadow-xs"
+                      : "bg-white border-[rgba(28,25,23,0.08)] hover:bg-[#F3F3EF]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Wrench className="w-3.5 h-3.5 text-indigo-700" />
+                      <span className="text-xs font-bold text-[#1C1C1A]">
+                        Cliente já autorizou / Bancada
+                      </span>
+                    </div>
+                    {!requireApproval && (
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#71716C] leading-snug">
+                    Mantém a OS em <strong>Bancada</strong>. Atualiza e efetua a <strong>baixa física</strong> das novas peças no estoque imediatamente.
+                  </p>
+                  <span className="text-[9px] font-bold uppercase text-indigo-800 bg-indigo-100/80 px-1.5 py-0.5 rounded w-fit">
+                    Ajuste autorizado / Desconto
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Rodapé com Botões de Ação */}
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-[rgba(28,25,23,0.08)]">
+
             <button
               type="button"
               onClick={onClose}
