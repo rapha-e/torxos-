@@ -28,12 +28,15 @@ import {
   ArrowRightLeft,
   Check,
   Users,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrentUser, getAuthToken, fetchApi, clearAllTenantCache } from "@/lib/api";
 import { isPlanFeatureAllowed, FeatureKey } from "@/lib/plan-rules";
 import { TorxLogo } from "@/components/ui/torxos-logo";
 import { SupportModal } from "@/components/ui/support-modal";
+import { SystemNotificationsModal } from "@/components/ui/system-notifications-modal";
+import { getUnreadUpdatesCount } from "@/lib/notifications";
 
 interface SubNavItem {
   name: string;
@@ -154,8 +157,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isImpersonating, setIsImpersonating] = useState<boolean>(false);
   const [networkBranches, setNetworkBranches] = useState<any[]>([]);
   const [showBranchDropdown, setShowBranchDropdown] = useState<boolean>(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
+    setUnreadCount(getUnreadUpdatesCount());
     const user = getCurrentUser();
     const token = getAuthToken();
 
@@ -713,6 +719,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Sparkles className="w-3.5 h-3.5 text-amber-700" strokeWidth={1.75} />
               <span>TorxOS AI</span>
             </Link>
+
+            <button
+              type="button"
+              onClick={() => setShowNotificationsModal(true)}
+              className="relative p-2 rounded-xl bg-white hover:bg-[#F3F3EF] border border-[rgba(28,25,23,0.07)] text-[#1C1C1A] transition shadow-xs cursor-pointer"
+              title="Central de Atualizações e Novidades do TorxOS"
+            >
+              <Bell className="w-4 h-4 text-[#71716C] hover:text-[#1C1C1A]" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold shadow-xs animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
           </div>
         </header>
 
@@ -722,6 +742,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Central de Suporte de Fácil Acesso */}
       <SupportModal />
+
+      {/* Central de Notificações e Atualizações para Assistências */}
+      <SystemNotificationsModal
+        isOpen={showNotificationsModal}
+        onClose={() => {
+          setShowNotificationsModal(false);
+          setUnreadCount(getUnreadUpdatesCount());
+        }}
+        onMarkedAllRead={() => setUnreadCount(0)}
+      />
     </div>
   );
 }
